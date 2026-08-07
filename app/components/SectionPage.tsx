@@ -322,18 +322,46 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
           </div>
           {posts.length ? (
           <div className="section-published-grid">
-            {posts.map((post) => (
+            {posts.map((post) => {
+              const gallery =
+                post.gallery?.length
+                  ? post.gallery
+                  : post.mediaUrl
+                    ? [
+                        {
+                          id: post.mediaId || post.id,
+                          url: post.mediaUrl,
+                          contentType: post.mediaType || "image/",
+                          alt: post.mediaAlt || post.title,
+                        },
+                      ]
+                    : [];
+              const cover = gallery[0];
+              return (
               <article key={post.id}>
-                {post.mediaUrl && post.mediaType?.startsWith("image/") && (
-                  <figure>
+                {cover && cover.contentType.startsWith("image/") && (
+                  <figure className="section-story-album">
                     {/* Public media is served only when attached to a published post. */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={post.mediaUrl}
-                      alt={post.mediaAlt || post.title}
+                      src={cover.url}
+                      alt={cover.alt || post.title}
                       loading="lazy"
                       decoding="async"
                     />
+                    {gallery.length > 1 ? (
+                      <div className="section-story-thumbs">
+                        {gallery.slice(1).map((item) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={item.id}
+                            src={item.url}
+                            alt={item.alt || post.title}
+                            loading="lazy"
+                          />
+                        ))}
+                      </div>
+                    ) : null}
                   </figure>
                 )}
                 <div className="section-published-copy">
@@ -343,7 +371,8 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
                   <time>{post.date}</time>
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
           ) : (
             <div className="section-empty">

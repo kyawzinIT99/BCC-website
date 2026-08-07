@@ -21,8 +21,16 @@ import { AdminOperations } from "./AdminOperations";
 import { InquiryAlert } from "./InquiryAlert";
 import { PageManager } from "./PageManager";
 import { EventsManager } from "./EventsManager";
+import { SubscribersManager } from "./SubscribersManager";
 
 const channels = ["Website", "Facebook", "Telegram", "Email"];
+const MAX_GALLERY_PHOTOS = 4;
+
+type ComposerMedia = {
+  id: number;
+  name: string;
+  previewUrl: string;
+};
 
 type Composer = {
   title: string;
@@ -31,8 +39,7 @@ type Composer = {
   category: CommunityPost["category"];
   placement: PublicPlacement;
   channels: string[];
-  mediaId: number | null;
-  mediaName: string;
+  media: ComposerMedia[];
   mediaAlt: string;
 };
 
@@ -43,8 +50,7 @@ const emptyComposer: Composer = {
   category: "Field notes",
   placement: "stories",
   channels: ["Website"],
-  mediaId: null,
-  mediaName: "",
+  media: [],
   mediaAlt: "",
 };
 
@@ -55,7 +61,6 @@ export function AdminDashboard() {
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
-  const [mediaPreview, setMediaPreview] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [previewing, setPreviewing] = useState(false);
 
@@ -100,19 +105,25 @@ export function AdminDashboard() {
     }));
   }
 
-  useEffect(
-    () => () => {
-      if (mediaPreview) URL.revokeObjectURL(mediaPreview);
-    },
-    [mediaPreview],
-  );
+  function revokeComposerPreviews(items: ComposerMedia[]) {
+    items.forEach((item) => {
+      if (item.previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+    });
+  }
 
   async function uploadMedia(file: File | undefined) {
     if (!file) return;
-    if (mediaPreview) URL.revokeObjectURL(mediaPreview);
-    setMediaPreview(file.type.startsWith("image/") ? URL.createObjectURL(file) : "");
+    if (composer.media.length >= MAX_GALLERY_PHOTOS) {
+      setNotice(`Each story can include up to ${MAX_GALLERY_PHOTOS} photos.`);
+      return;
+    }
     setUploadingMedia(true);
     setNotice("");
+    const localPreview = file.type.startsWith("image/")
+      ? URL.createObjectURL(file)
+      : "";
     try {
       const form = new FormData();
       form.append("file", file);
@@ -125,17 +136,37 @@ export function AdminDashboard() {
       if (!response.ok) throw new Error(payload.error || "Unable to upload media");
       setComposer((current) => ({
         ...current,
-        mediaId: Number(payload.media.id),
-        mediaName: String(payload.media.filename),
+        media: [
+          ...current.media,
+          {
+            id: Number(payload.media.id),
+            name: String(payload.media.filename),
+            previewUrl: localPreview || `/api/media?id=${Number(payload.media.id)}`,
+          },
+        ].slice(0, MAX_GALLERY_PHOTOS),
       }));
-      setNotice(`${payload.media.filename} uploaded and attached to this post.`);
+      setNotice(
+        `${payload.media.filename} added (${Math.min(composer.media.length + 1, MAX_GALLERY_PHOTOS)} of ${MAX_GALLERY_PHOTOS}).`,
+      );
     } catch (error) {
-      setComposer((current) => ({ ...current, mediaId: null, mediaName: "" }));
-      setMediaPreview("");
+      if (localPreview) URL.revokeObjectURL(localPreview);
       setNotice(error instanceof Error ? error.message : "Unable to upload media");
     } finally {
       setUploadingMedia(false);
     }
+  }
+
+  function removeMedia(mediaId: number) {
+    setComposer((current) => {
+      const target = current.media.find((item) => item.id === mediaId);
+      if (target?.previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return {
+        ...current,
+        media: current.media.filter((item) => item.id !== mediaId),
+      };
+    });
   }
 
   async function savePost(status: "draft" | "review" | "published") {
@@ -154,7 +185,18 @@ export function AdminDashboard() {
       const response = await fetch("/api/posts", {
         method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...composer, status, id: editingId }),
+        body: JSON.stringify({
+          title: composer.title,
+          excerpt: composer.excerpt,
+          body: composer.body,
+          category: composer.category,
+          placement: composer.placement,
+          channels: composer.channels,
+          mediaId: composer.media[0]?.id ?? null,
+          mediaIds: composer.media.map((item) => item.id),
+          status,
+          id: editingId,
+        }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Content API unavailable");
@@ -163,9 +205,9 @@ export function AdminDashboard() {
           ? current.map((post) => post.id === editingId ? payload.post : post)
           : [payload.post, ...current],
       );
+      revokeComposerPreviews(composer.media);
       setComposer(emptyComposer);
       setEditingId(null);
-      setMediaPreview("");
       setNotice(
         status === "draft"
           ? "Draft saved. Nothing was distributed."
@@ -180,6 +222,19 @@ export function AdminDashboard() {
 
   function editPost(post: CommunityPost) {
     setEditingId(post.id);
+    const gallery =
+      post.gallery?.length
+        ? post.gallery
+        : post.mediaId
+          ? [
+              {
+                id: post.mediaId,
+                url: post.mediaUrl || `/api/media?id=${post.mediaId}`,
+                contentType: post.mediaType || "image/jpeg",
+                alt: post.mediaAlt || "",
+              },
+            ]
+          : [];
     setComposer({
       title: post.title,
       excerpt: post.excerpt,
@@ -187,11 +242,13 @@ export function AdminDashboard() {
       category: post.category,
       placement: post.placement,
       channels: post.channels,
-      mediaId: post.mediaId || null,
-      mediaName: post.mediaId ? `Existing media #${post.mediaId}` : "",
+      media: gallery.map((item) => ({
+        id: item.id,
+        name: `Photo #${item.id}`,
+        previewUrl: item.url,
+      })),
       mediaAlt: post.mediaAlt || "",
     });
-    setMediaPreview("");
     document.querySelector("#composer")?.scrollIntoView({ behavior: "smooth" });
   }
 
@@ -202,7 +259,16 @@ export function AdminDashboard() {
       const response = await fetch("/api/posts", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...post, status: "published" }),
+        body: JSON.stringify({
+          ...post,
+          mediaId: post.mediaId ?? post.gallery?.[0]?.id ?? null,
+          mediaIds:
+            post.mediaIds?.length
+              ? post.mediaIds
+              : post.gallery?.map((item) => item.id) ||
+                (post.mediaId ? [post.mediaId] : []),
+          status: "published",
+        }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Unable to publish");
@@ -257,7 +323,10 @@ export function AdminDashboard() {
           <a href="#pages"><span>07</span> Public pages</a>
           <a href="#events"><span>08</span> Events</a>
           {session.role !== "editor" && (
-            <a href="#inquiries"><span>09</span> Enquiries</a>
+            <>
+              <a href="#subscribers"><span>09</span> Subscribers</a>
+              <a href="#inquiries"><span>10</span> Enquiries</a>
+            </>
           )}
         </nav>
         <div className="sidebar-note">
@@ -388,37 +457,73 @@ export function AdminDashboard() {
               />
             </label>
 
-            <div className={composer.mediaId ? "upload-zone has-media" : "upload-zone"}>
-              {mediaPreview ? (
-                <Image
-                  src={mediaPreview}
-                  alt="Selected media preview"
-                  width={58}
-                  height={58}
-                  unoptimized
-                />
-              ) : (
-                <span>{uploadingMedia ? "…" : "+"}</span>
-              )}
+            <div
+              className={
+                composer.media.length
+                  ? "upload-zone has-media gallery-upload"
+                  : "upload-zone gallery-upload"
+              }
+            >
+              <div className="composer-gallery-thumbs">
+                {composer.media.map((item, index) => (
+                  <div className="composer-gallery-thumb" key={item.id}>
+                    {item.previewUrl ? (
+                      <Image
+                        src={item.previewUrl}
+                        alt={item.name}
+                        width={58}
+                        height={58}
+                        unoptimized
+                      />
+                    ) : (
+                      <span>{index + 1}</span>
+                    )}
+                    <button
+                      type="button"
+                      className="composer-gallery-remove"
+                      onClick={() => removeMedia(item.id)}
+                      aria-label={`Remove ${item.name}`}
+                    >
+                      ×
+                    </button>
+                    {index === 0 ? <em>Cover</em> : null}
+                  </div>
+                ))}
+                {composer.media.length < MAX_GALLERY_PHOTOS ? (
+                  <span className="composer-gallery-add">
+                    {uploadingMedia ? "…" : "+"}
+                  </span>
+                ) : null}
+              </div>
               <p>
                 {uploadingMedia
                   ? "Uploading approved media…"
-                  : composer.mediaName || "Add approved media"}
+                  : composer.media.length
+                    ? `${composer.media.length} of ${MAX_GALLERY_PHOTOS} photos attached`
+                    : "Add approved photos (gallery style)"}
                 <small>
-                  {composer.mediaId
-                    ? "Uploaded securely and attached to this post."
-                    : "Choose an image or PDF up to 15 MB."}
+                  Up to {MAX_GALLERY_PHOTOS} photos stay together as one story
+                  album — they will not scatter across the site.
                 </small>
               </p>
               <label className="upload-choose" htmlFor="post-media">
-                {composer.mediaId ? "Replace file" : "Browse files"}
+                {composer.media.length >= MAX_GALLERY_PHOTOS
+                  ? "Limit reached"
+                  : composer.media.length
+                    ? "Add another photo"
+                    : "Browse files"}
               </label>
               <input
                 id="post-media"
                 type="file"
                 accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                disabled={uploadingMedia}
-                onChange={(event) => void uploadMedia(event.target.files?.[0])}
+                disabled={
+                  uploadingMedia || composer.media.length >= MAX_GALLERY_PHOTOS
+                }
+                onChange={(event) => {
+                  void uploadMedia(event.target.files?.[0]);
+                  event.currentTarget.value = "";
+                }}
               />
             </div>
             <label>
@@ -429,7 +534,7 @@ export function AdminDashboard() {
                 onChange={(event) =>
                   setComposer({ ...composer, mediaAlt: event.target.value })
                 }
-                placeholder="Describe the photo for people using screen readers."
+                placeholder="Describe the photos for people using screen readers."
               />
             </label>
 
@@ -533,7 +638,15 @@ export function AdminDashboard() {
                 ) : (
                   <span>{post.category.slice(0, 2).toUpperCase()}</span>
                 )}
-                <p>{post.title}<small>{post.category} · {post.author}</small></p>
+                <p>
+                  {post.title}
+                  <small>
+                    {post.category} · {post.author}
+                    {(post.gallery?.length || 0) > 1
+                      ? ` · ${post.gallery!.length} photos`
+                      : ""}
+                  </small>
+                </p>
               </div>
               <strong className={`status-${post.status}`}>{post.status}</strong>
               <p>{sectionDefinitions[post.placement].label}</p>
@@ -564,6 +677,7 @@ export function AdminDashboard() {
         <TeamAccess currentUser={session} />
         <PageManager currentUser={session} />
         <EventsManager />
+        <SubscribersManager currentUser={session} />
         <AdminOperations currentUser={session} />
         {previewing && (
           <div className="preview-overlay" role="dialog" aria-modal="true">
@@ -572,6 +686,20 @@ export function AdminDashboard() {
               <span>{composer.category}</span>
               <h2>{composer.title || "Untitled update"}</h2>
               <p>{composer.excerpt}</p>
+              {composer.media.length ? (
+                <div className="preview-gallery">
+                  {composer.media.map((item) => (
+                    <Image
+                      key={item.id}
+                      src={item.previewUrl}
+                      alt={item.name}
+                      width={120}
+                      height={90}
+                      unoptimized
+                    />
+                  ))}
+                </div>
+              ) : null}
               <div>{composer.body}</div>
               <small>Private preview · {sectionDefinitions[composer.placement].label}</small>
             </article>

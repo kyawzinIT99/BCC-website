@@ -20,9 +20,16 @@ export interface CommunityPost {
   author: string;
   visualLabel: string;
   mediaId?: number | null;
+  mediaIds?: number[];
   mediaUrl?: string | null;
   mediaType?: string | null;
   mediaAlt?: string;
+  gallery?: Array<{
+    id: number;
+    url: string;
+    contentType: string;
+    alt: string;
+  }>;
   scheduledAt?: string | null;
 }
 

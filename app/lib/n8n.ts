@@ -7,6 +7,8 @@ type N8nRuntime = {
   N8N_INQUIRY_ALERT_WEBHOOK?: string;
   N8N_INQUIRY_WEBHOOK_SECRET?: string;
   N8N_PUBLISH_WEBHOOK?: string;
+  N8N_SUBSCRIBE_ALERT_WEBHOOK?: string;
+  N8N_EVENT_MAIL_WEBHOOK?: string;
   N8N_BASE_URL?: string;
 };
 
@@ -66,5 +68,39 @@ export async function notifyPublishAutomation(payload: Record<string, unknown>) 
   return postWebhook(webhook, {
     event: "community.post.published",
     ...payload,
+  });
+}
+
+/** New website subscriber → staff Telegram/email via n8n. */
+export async function notifySubscribeAutomation(payload: Record<string, unknown>) {
+  const config = runtime();
+  const webhook =
+    config.N8N_SUBSCRIBE_ALERT_WEBHOOK?.trim() ||
+    config.N8N_INQUIRY_ALERT_WEBHOOK?.trim();
+  if (config.CRM_ALERTS_ENABLED !== "true" || !webhook) {
+    return "disabled";
+  }
+  return postWebhook(webhook, {
+    ...payload,
+    telegramChatId: config.CRM_TELEGRAM_CHAT_ID?.trim() || "",
+    alertEmail: config.CRM_ALERT_EMAIL?.trim() || "",
+  });
+}
+
+/**
+ * Published upcoming event → n8n sends mail to active subscribers.
+ * Website never emails the public directly; n8n owns delivery.
+ */
+export async function notifyEventMailAutomation(payload: Record<string, unknown>) {
+  const config = runtime();
+  const webhook = config.N8N_EVENT_MAIL_WEBHOOK?.trim();
+  if (!webhook) {
+    return "disabled";
+  }
+  return postWebhook(webhook, {
+    event: "community.event.published",
+    ...payload,
+    telegramChatId: config.CRM_TELEGRAM_CHAT_ID?.trim() || "",
+    alertEmail: config.CRM_ALERT_EMAIL?.trim() || "",
   });
 }

@@ -44,6 +44,12 @@ async function ensureMediaSchema(db: D1Database) {
     uploaded_by TEXT NOT NULL DEFAULT 'Community editor',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   )`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS post_media (
+    post_id INTEGER NOT NULL,
+    media_id INTEGER NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (post_id, media_id)
+  )`).run();
   try {
     await db.prepare("ALTER TABLE media ADD COLUMN alt_text TEXT NOT NULL DEFAULT ''").run();
   } catch (error) {
@@ -70,8 +76,18 @@ export async function GET(request: Request) {
       : await db
           .prepare(`SELECT DISTINCT m.object_key, m.filename, m.content_type
             FROM media m
-            INNER JOIN posts p ON p.media_id = m.id
-            WHERE m.id = ? AND p.status = 'published'
+            WHERE m.id = ?
+              AND (
+                EXISTS (
+                  SELECT 1 FROM posts p
+                  WHERE p.media_id = m.id AND p.status = 'published'
+                )
+                OR EXISTS (
+                  SELECT 1 FROM post_media pm
+                  INNER JOIN posts p ON p.id = pm.post_id
+                  WHERE pm.media_id = m.id AND p.status = 'published'
+                )
+              )
             LIMIT 1`)
           .bind(mediaId)
           .first<Record<string, unknown>>();

@@ -35,6 +35,15 @@ async function canWrite(request: Request) {
   return Boolean(expected && request.headers.get("x-admin-token") === expected);
 }
 
+const MAX_GALLERY_MEDIA = 4;
+
+type GalleryItem = {
+  id: number;
+  url: string;
+  contentType: string;
+  alt: string;
+};
+
 async function ensureSchema(db: D1Database) {
   await db.batch([
     db.prepare(`CREATE TABLE IF NOT EXISTS posts (
@@ -74,6 +83,15 @@ async function ensureSchema(db: D1Database) {
       uploaded_by TEXT NOT NULL DEFAULT 'Community editor',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS post_media (
+      post_id INTEGER NOT NULL,
+      media_id INTEGER NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (post_id, media_id)
+    )`),
+    db.prepare(
+      "CREATE INDEX IF NOT EXISTS post_media_post_idx ON post_media(post_id, sort_order)",
+    ),
   ]);
   try {
     await db
@@ -111,7 +129,100 @@ async function ensureSchema(db: D1Database) {
   }
 }
 
-function normalize(row: Record<string, unknown>) {
+function parseMediaIds(payload: {
+  mediaId?: number | null;
+  mediaIds?: unknown;
+}): number[] {
+  const fromArray = Array.isArray(payload.mediaIds)
+    ? payload.mediaIds
+        .map((value) => Number(value))
+        .filter((id) => Number.isSafeInteger(id) && id > 0)
+    : [];
+  if (fromArray.length) {
+    return [...new Set(fromArray)].slice(0, MAX_GALLERY_MEDIA);
+  }
+  const single = Number(payload.mediaId);
+  return Number.isSafeInteger(single) && single > 0 ? [single] : [];
+}
+
+async function syncPostMedia(db: D1Database, postId: number, mediaIds: number[]) {
+  await db.prepare("DELETE FROM post_media WHERE post_id = ?").bind(postId).run();
+  for (let index = 0; index < mediaIds.length; index += 1) {
+    await db
+      .prepare(
+        "INSERT INTO post_media (post_id, media_id, sort_order) VALUES (?, ?, ?)",
+      )
+      .bind(postId, mediaIds[index], index)
+      .run();
+  }
+  await db
+    .prepare("UPDATE posts SET media_id = ? WHERE id = ?")
+    .bind(mediaIds[0] ?? null, postId)
+    .run();
+}
+
+async function loadGalleries(
+  db: D1Database,
+  postIds: number[],
+): Promise<Map<number, GalleryItem[]>> {
+  const galleries = new Map<number, GalleryItem[]>();
+  if (!postIds.length) return galleries;
+
+  const placeholders = postIds.map(() => "?").join(", ");
+  const linked = await db
+    .prepare(
+      `SELECT pm.post_id, m.id, m.content_type, m.alt_text, pm.sort_order
+        FROM post_media pm
+        INNER JOIN media m ON m.id = pm.media_id
+        WHERE pm.post_id IN (${placeholders})
+        ORDER BY pm.post_id ASC, pm.sort_order ASC`,
+    )
+    .bind(...postIds)
+    .all();
+
+  for (const row of linked.results as Record<string, unknown>[]) {
+    const postId = Number(row.post_id);
+    const list = galleries.get(postId) || [];
+    list.push({
+      id: Number(row.id),
+      url: `/api/media?id=${Number(row.id)}`,
+      contentType: String(row.content_type || ""),
+      alt: String(row.alt_text || ""),
+    });
+    galleries.set(postId, list);
+  }
+
+  // Backward compatibility: older posts with only posts.media_id
+  const missing = postIds.filter((id) => !galleries.get(id)?.length);
+  if (missing.length) {
+    const coverPlaceholders = missing.map(() => "?").join(", ");
+    const covers = await db
+      .prepare(
+        `SELECT p.id AS post_id, m.id, m.content_type, m.alt_text
+          FROM posts p
+          INNER JOIN media m ON m.id = p.media_id
+          WHERE p.id IN (${coverPlaceholders}) AND p.media_id IS NOT NULL`,
+      )
+      .bind(...missing)
+      .all();
+    for (const row of covers.results as Record<string, unknown>[]) {
+      galleries.set(Number(row.post_id), [
+        {
+          id: Number(row.id),
+          url: `/api/media?id=${Number(row.id)}`,
+          contentType: String(row.content_type || ""),
+          alt: String(row.alt_text || ""),
+        },
+      ]);
+    }
+  }
+
+  return galleries;
+}
+
+function normalize(row: Record<string, unknown>, gallery: GalleryItem[] = []) {
+  const cover = gallery[0];
+  const mediaId = cover?.id ?? (row.media_id ? Number(row.media_id) : null);
   return {
     id: row.id,
     slug: row.slug,
@@ -123,14 +234,27 @@ function normalize(row: Record<string, unknown>) {
     status: row.status,
     channels: JSON.parse(String(row.channels || "[]")),
     author: row.author,
-    mediaId: row.media_id ? Number(row.media_id) : null,
-    mediaUrl: row.media_id ? `/api/media?id=${Number(row.media_id)}` : null,
-    mediaType: row.media_content_type ? String(row.media_content_type) : null,
-    mediaAlt: row.media_alt_text ? String(row.media_alt_text) : "",
+    mediaId,
+    mediaIds: gallery.map((item) => item.id),
+    mediaUrl: mediaId ? `/api/media?id=${mediaId}` : null,
+    mediaType:
+      cover?.contentType ||
+      (row.media_content_type ? String(row.media_content_type) : null),
+    mediaAlt:
+      cover?.alt || (row.media_alt_text ? String(row.media_alt_text) : ""),
+    gallery,
     scheduledAt: row.scheduled_at ? String(row.scheduled_at) : null,
     date: row.published_at || row.updated_at,
     visualLabel: "COMMUNITY UPDATE",
   };
+}
+
+async function enrichPosts(db: D1Database, rows: Record<string, unknown>[]) {
+  const galleries = await loadGalleries(
+    db,
+    rows.map((row) => Number(row.id)).filter((id) => Number.isSafeInteger(id)),
+  );
+  return rows.map((row) => normalize(row, galleries.get(Number(row.id)) || []));
 }
 
 export async function GET(request: Request) {
@@ -176,9 +300,14 @@ export async function GET(request: Request) {
                 ORDER BY p.published_at DESC, p.id DESC LIMIT 50`,
             )
             .all();
-    return Response.json({
-      posts: (result.results as Record<string, unknown>[]).map(normalize),
-    }, { headers: adminScope ? noStoreHeaders() : undefined });
+    const posts = await enrichPosts(
+      db,
+      result.results as Record<string, unknown>[],
+    );
+    return Response.json(
+      { posts },
+      { headers: adminScope ? noStoreHeaders() : undefined },
+    );
   } catch {
     return Response.json(
       { error: "Unable to load posts" },
@@ -210,6 +339,7 @@ export async function POST(request: Request) {
       channels?: string[];
       author?: string;
       mediaId?: number | null;
+      mediaIds?: number[];
       scheduledAt?: string | null;
     };
     const title = payload.title?.trim() || "";
@@ -240,10 +370,8 @@ export async function POST(request: Request) {
       ? payload.placement!
       : "stories";
     const slug = `${slugify(title)}-${Date.now().toString(36)}`;
-    const mediaId =
-      Number.isSafeInteger(Number(payload.mediaId)) && Number(payload.mediaId) > 0
-        ? Number(payload.mediaId)
-        : null;
+    const mediaIds = parseMediaIds(payload);
+    const mediaId = mediaIds[0] ?? null;
     const db = runtime().DB;
     if (!db) throw new Error("D1 binding DB is unavailable");
     await ensureSchema(db);
@@ -269,12 +397,17 @@ export async function POST(request: Request) {
       )
       .first();
 
+    const postId = Number((row as Record<string, unknown>).id);
+    await syncPostMedia(db, postId, mediaIds);
+
     const storedPost = await db
       .prepare(`SELECT p.*, m.content_type AS media_content_type, m.alt_text AS media_alt_text
         FROM posts p LEFT JOIN media m ON m.id = p.media_id WHERE p.id = ?`)
-      .bind(Number((row as Record<string, unknown>).id))
+      .bind(postId)
       .first();
-    const post = normalize(storedPost as Record<string, unknown>);
+    const [post] = await enrichPosts(db, [
+      storedPost as Record<string, unknown>,
+    ]);
 
     if (staffUser) {
       await recordAudit(db, staffUser.id, "post.create", "post", Number(post.id), {
@@ -338,6 +471,7 @@ export async function PATCH(request: Request) {
       status?: "draft" | "review" | "published";
       channels?: string[];
       mediaId?: number | null;
+      mediaIds?: number[];
     };
     const id = Number(payload.id);
     const title = payload.title?.trim() || "";
@@ -362,11 +496,14 @@ export async function PATCH(request: Request) {
     await ensureSchema(db);
     const existing = await db.prepare("SELECT * FROM posts WHERE id = ?").bind(id).first();
     if (!existing) return Response.json({ error: "Post not found" }, { status: 404 });
+    const [existingEnriched] = await enrichPosts(db, [
+      existing as Record<string, unknown>,
+    ]);
     await db
       .prepare(
         "INSERT INTO post_revisions (post_id, snapshot, changed_by) VALUES (?, ?, ?)",
       )
-      .bind(id, JSON.stringify(normalize(existing as Record<string, unknown>)), staffUser.id)
+      .bind(id, JSON.stringify(existingEnriched), staffUser.id)
       .run();
     const placement = sectionKeys.includes(payload.placement as SectionKey)
       ? payload.placement!
@@ -374,10 +511,8 @@ export async function PATCH(request: Request) {
     const channels = Array.isArray(payload.channels)
       ? payload.channels.filter((item) => typeof item === "string").slice(0, 8)
       : ["Website"];
-    const mediaId =
-      Number.isSafeInteger(Number(payload.mediaId)) && Number(payload.mediaId) > 0
-        ? Number(payload.mediaId)
-        : null;
+    const mediaIds = parseMediaIds(payload);
+    const mediaId = mediaIds[0] ?? null;
     const row = await db
       .prepare(`UPDATE posts SET
         title = ?, excerpt = ?, body = ?, category = ?, placement = ?,
@@ -403,6 +538,7 @@ export async function PATCH(request: Request) {
         id,
       )
       .first();
+    await syncPostMedia(db, id, mediaIds);
     const previousStatus = String((existing as Record<string, unknown>).status);
     await recordAudit(db, staffUser.id, `post.${status}`, "post", id, {
       previousStatus,
@@ -413,7 +549,9 @@ export async function PATCH(request: Request) {
         FROM posts p LEFT JOIN media m ON m.id = p.media_id WHERE p.id = ?`)
       .bind(Number((row as Record<string, unknown>).id))
       .first();
-    const post = normalize(storedPost as Record<string, unknown>);
+    const [post] = await enrichPosts(db, [
+      storedPost as Record<string, unknown>,
+    ]);
 
     if (status === "published" && previousStatus !== "published") {
       const automation = await notifyPublishAutomation({

@@ -16,12 +16,21 @@ alwaysApply: true
 - Hostinger API connected via `HOSTINGER_API_TOKEN` in `.dev.vars` (never commit). Base: `https://developers.hostinger.com`.
 
 ## Recently built n8n workflows (already integrated)
-- `BCC Inquiry Alert` → webhook `/webhook/bcc-inquiry-alert` (CRM inquiries → Telegram/email).
-- `BCC Publish Distribution` → webhook `/webhook/bcc-publish-distribution` (after authorised publish).
-- Website env: `CRM_ALERTS_ENABLED`, `N8N_INQUIRY_ALERT_WEBHOOK`, `N8N_PUBLISH_WEBHOOK` in `.dev.vars` (never commit secrets).
+- `BCC Inquiry Alert` (`U1gvYq4WnZvxyMIm`) → `/webhook/bcc-inquiry-alert`
+- `BCC Publish Distribution` (`czx6JcuNWP2unBRv`) → `/webhook/bcc-publish-distribution`
+- `BCC Subscribe Alert` (`JBDK9TqPnYJCkAMn`) → `/webhook/bcc-subscribe-alert` (new/reactivated subscribers → Telegram/Gmail staff alert)
+- `BCC Event Mail` (`bS9NmXubTc9y9Kc0`) → `/webhook/bcc-event-mail` (published upcoming event → Gmail to active subscribers + staff Telegram summary)
+- Website env in `.dev.vars`: `CRM_ALERTS_ENABLED`, `N8N_INQUIRY_ALERT_WEBHOOK`, `N8N_PUBLISH_WEBHOOK`, `N8N_SUBSCRIBE_ALERT_WEBHOOK`, `N8N_EVENT_MAIL_WEBHOOK`, shared `N8N_INQUIRY_WEBHOOK_SECRET` (never commit).
+
+## Mail subscribe → Admin → n8n → event emails
+- Public form on Home + Events (`MailSubscribe`) posts to `/api/subscribers` with consent.
+- Admin panel **Subscribers** list (owner/admin only); can mark unsubscribed.
+- New subscribe alerts staff via `N8N_SUBSCRIBE_ALERT_WEBHOOK`.
+- Publishing an **upcoming** event calls `N8N_EVENT_MAIL_WEBHOOK` with event details + active subscriber emails for Gmail delivery in n8n.
+- Draft events never trigger mail. Re-saving an already-published event does not re-send.
 
 ## Pending owner inputs
-- Telegram bot API key + staff `CRM_TELEGRAM_CHAT_ID` (and optional `CRM_ALERT_EMAIL`) to finish live CRM alerts.
+- Telegram bot chat id: set `CRM_TELEGRAM_CHAT_ID` (and optional `CRM_ALERT_EMAIL`) so staff alerts actually deliver.
 - Hostinger Pro domain purchase/attach + mailbox setup when ready.
 - Decide website deploy target: new Linux VPS vs Docker services on existing KVM 2.
 

@@ -5,14 +5,11 @@ import Link from "next/link";
 import { PublicHeader, type PublicLanguage } from "./PublicHeader";
 import { PublicQuestionWidget } from "./PublicQuestionWidget";
 
-type MediaItem = {
+type GalleryItem = {
   id: number;
-  filename: string;
-  content_type: string;
-  size: number;
-  alt_text: string;
-  uploaded_by: string;
-  created_at: string;
+  url: string;
+  contentType: string;
+  alt: string;
 };
 
 type GalleryPost = {
@@ -24,20 +21,29 @@ type GalleryPost = {
   date: string;
   mediaUrl: string | null;
   mediaAlt: string;
+  gallery?: GalleryItem[];
 };
 
 export function GalleryPage() {
   const [language, setLanguage] = useState<PublicLanguage>("en");
   const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [filter, setFilter] = useState<string>("all");
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightbox, setLightbox] = useState<{
+    postIndex: number;
+    photoIndex: number;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/posts")
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d) => {
         if (Array.isArray(d.posts)) {
-          setPosts(d.posts.filter((p: GalleryPost) => p.mediaUrl));
+          setPosts(
+            d.posts.filter(
+              (p: GalleryPost) =>
+                (p.gallery && p.gallery.length > 0) || p.mediaUrl,
+            ),
+          );
         }
       })
       .catch(() => setPosts([]));
@@ -47,27 +53,54 @@ export function GalleryPage() {
   const filtered =
     filter === "all" ? posts : posts.filter((p) => p.category === filter);
 
-  const openLightbox = useCallback((index: number) => {
-    setLightboxIndex(index);
+  function albumFor(post: GalleryPost): GalleryItem[] {
+    if (post.gallery?.length) return post.gallery;
+    if (post.mediaUrl) {
+      return [
+        {
+          id: post.id,
+          url: post.mediaUrl,
+          contentType: "image/",
+          alt: post.mediaAlt || post.title,
+        },
+      ];
+    }
+    return [];
+  }
+
+  const openLightbox = useCallback((postIndex: number, photoIndex = 0) => {
+    setLightbox({ postIndex, photoIndex });
     document.body.style.overflow = "hidden";
   }, []);
 
   const closeLightbox = useCallback(() => {
-    setLightboxIndex(null);
+    setLightbox(null);
     document.body.style.overflow = "";
   }, []);
 
   const navigateLightbox = useCallback(
     (direction: 1 | -1) => {
-      if (lightboxIndex === null) return;
-      const next = lightboxIndex + direction;
-      if (next >= 0 && next < filtered.length) setLightboxIndex(next);
+      if (lightbox === null) return;
+      const album = albumFor(filtered[lightbox.postIndex] || { id: 0, slug: "", title: "", excerpt: "", category: "", date: "", mediaUrl: null, mediaAlt: "" });
+      const nextPhoto = lightbox.photoIndex + direction;
+      if (nextPhoto >= 0 && nextPhoto < album.length) {
+        setLightbox({ ...lightbox, photoIndex: nextPhoto });
+        return;
+      }
+      const nextPost = lightbox.postIndex + direction;
+      if (nextPost >= 0 && nextPost < filtered.length) {
+        const nextAlbum = albumFor(filtered[nextPost]);
+        setLightbox({
+          postIndex: nextPost,
+          photoIndex: direction === 1 ? 0 : Math.max(0, nextAlbum.length - 1),
+        });
+      }
     },
-    [lightboxIndex, filtered.length]
+    [lightbox, filtered],
   );
 
   useEffect(() => {
-    if (lightboxIndex === null) return;
+    if (lightbox === null) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeLightbox();
       if (e.key === "ArrowRight") navigateLightbox(1);
@@ -75,7 +108,13 @@ export function GalleryPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [lightboxIndex, closeLightbox, navigateLightbox]);
+  }, [lightbox, closeLightbox, navigateLightbox]);
+
+  const activePost =
+    lightbox !== null ? filtered[lightbox.postIndex] : null;
+  const activeAlbum = activePost ? albumFor(activePost) : [];
+  const activePhoto =
+    lightbox !== null ? activeAlbum[lightbox.photoIndex] : null;
 
   return (
     <main className="public-site civic-public-site v2-redesign">
@@ -85,19 +124,17 @@ export function GalleryPage() {
         onLanguageChange={setLanguage}
       />
 
-      {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="v2-gallery-hero">
         <div className="v2-gallery-hero-content">
           <p className="v2-section-eyebrow">Community gallery</p>
           <h1>Moments That Matter</h1>
           <p className="v2-gallery-subtitle">
-            Real photos from our community events, service missions, and
-            gatherings — captured by our members.
+            Each card is one approved story album — up to four photos stay
+            together with their context, not scattered across the site.
           </p>
         </div>
       </section>
 
-      {/* ── Filter Bar ───────────────────────────────────────── */}
       <div className="v2-gallery-filters">
         {categories.map((cat) => (
           <button
@@ -107,60 +144,99 @@ export function GalleryPage() {
             }`}
             onClick={() => setFilter(cat)}
           >
-            {cat === "all" ? "All Photos" : cat}
+            {cat === "all" ? "All albums" : cat}
           </button>
         ))}
         <span className="v2-gallery-count">
-          {filtered.length} photo{filtered.length !== 1 ? "s" : ""}
+          {filtered.length} album{filtered.length !== 1 ? "s" : ""}
         </span>
       </div>
 
-      {/* ── Masonry Grid ─────────────────────────────────────── */}
       <section className="v2-gallery-grid-section">
         {filtered.length === 0 ? (
           <div className="v2-gallery-empty">
-            <p>No photos yet. Upload photos through the admin panel to see them here.</p>
+            <p>
+              No photos yet. Publish a story with photos in the admin panel to
+              see albums here.
+            </p>
           </div>
         ) : (
           <div className="v2-gallery-masonry">
-            {filtered.map((post, index) => (
-              <article
-                key={post.id}
-                className="v2-gallery-item"
-                onClick={() => openLightbox(index)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && openLightbox(index)}
-              >
-                <div className="v2-gallery-image-wrap">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={post.mediaUrl!}
-                    alt={post.mediaAlt || post.title}
-                    loading="lazy"
-                  />
-                  <div className="v2-gallery-image-overlay">
-                    <span className="v2-gallery-zoom-icon">⛶</span>
+            {filtered.map((post, index) => {
+              const album = albumFor(post);
+              const cover = album[0];
+              return (
+                <article
+                  key={post.id}
+                  className="v2-gallery-item"
+                  onClick={() => openLightbox(index, 0)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === "Enter" && openLightbox(index, 0)}
+                >
+                  <div className="v2-gallery-image-wrap">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={cover.url}
+                      alt={cover.alt || post.title}
+                      loading="lazy"
+                    />
+                    <div className="v2-gallery-image-overlay">
+                      <span className="v2-gallery-zoom-icon">⛶</span>
+                    </div>
+                    {album.length > 1 ? (
+                      <span className="v2-gallery-count-badge">
+                        {album.length} photos
+                      </span>
+                    ) : null}
                   </div>
-                </div>
-                <div className="v2-gallery-caption">
-                  <span className="v2-gallery-cat">{post.category}</span>
-                  <h3>{post.title}</h3>
-                  <time>{post.date ? (() => { const d = new Date(post.date); const m = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${d.getUTCDate()} ${m[d.getUTCMonth()]} ${d.getUTCFullYear()}`; })() : ""}</time>
-                </div>
-              </article>
-            ))}
+                  {album.length > 1 ? (
+                    <div className="v2-gallery-album-strip" aria-hidden="true">
+                      {album.slice(0, 4).map((item) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={item.id} src={item.url} alt="" />
+                      ))}
+                    </div>
+                  ) : null}
+                  <div className="v2-gallery-caption">
+                    <span className="v2-gallery-cat">{post.category}</span>
+                    <h3>{post.title}</h3>
+                    <time>
+                      {post.date
+                        ? (() => {
+                            const d = new Date(post.date);
+                            const m = [
+                              "Jan",
+                              "Feb",
+                              "Mar",
+                              "Apr",
+                              "May",
+                              "Jun",
+                              "Jul",
+                              "Aug",
+                              "Sep",
+                              "Oct",
+                              "Nov",
+                              "Dec",
+                            ];
+                            return `${d.getUTCDate()} ${m[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+                          })()
+                        : ""}
+                    </time>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
 
-      {/* ── Lightbox ──────────────────────────────────────────── */}
-      {lightboxIndex !== null && filtered[lightboxIndex] && (
+      {activePost && activePhoto && lightbox !== null && (
         <div
           className="v2-lightbox"
           onClick={closeLightbox}
           role="dialog"
-          aria-label="Photo viewer"
+          aria-label="Photo album viewer"
         >
           <div
             className="v2-lightbox-content"
@@ -173,7 +249,7 @@ export function GalleryPage() {
             >
               ✕
             </button>
-            {lightboxIndex > 0 && (
+            {(lightbox.postIndex > 0 || lightbox.photoIndex > 0) && (
               <button
                 className="v2-lightbox-nav v2-lightbox-prev"
                 onClick={() => navigateLightbox(-1)}
@@ -182,7 +258,8 @@ export function GalleryPage() {
                 ‹
               </button>
             )}
-            {lightboxIndex < filtered.length - 1 && (
+            {(lightbox.postIndex < filtered.length - 1 ||
+              lightbox.photoIndex < activeAlbum.length - 1) && (
               <button
                 className="v2-lightbox-nav v2-lightbox-next"
                 onClick={() => navigateLightbox(1)}
@@ -193,24 +270,42 @@ export function GalleryPage() {
             )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={filtered[lightboxIndex].mediaUrl!}
-              alt={
-                filtered[lightboxIndex].mediaAlt ||
-                filtered[lightboxIndex].title
-              }
+              src={activePhoto.url}
+              alt={activePhoto.alt || activePost.title}
             />
+            {activeAlbum.length > 1 ? (
+              <div className="v2-lightbox-thumbs">
+                {activeAlbum.map((item, photoIndex) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={
+                      photoIndex === lightbox.photoIndex ? "active" : undefined
+                    }
+                    onClick={() =>
+                      setLightbox({ postIndex: lightbox.postIndex, photoIndex })
+                    }
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item.url} alt="" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <div className="v2-lightbox-info">
-              <h3>{filtered[lightboxIndex].title}</h3>
-              <p>{filtered[lightboxIndex].excerpt}</p>
+              <h3>{activePost.title}</h3>
+              <p>{activePost.excerpt}</p>
               <span className="v2-gallery-cat">
-                {filtered[lightboxIndex].category}
+                {activePost.category}
+                {activeAlbum.length > 1
+                  ? ` · ${lightbox.photoIndex + 1}/${activeAlbum.length}`
+                  : ""}
               </span>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── CTA ──────────────────────────────────────────────── */}
       <section className="v2-gallery-cta">
         <h2>Have photos to share?</h2>
         <p>

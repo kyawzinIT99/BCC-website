@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { authenticateRequest } from "../../lib/auth";
+import { notifyEventMailAutomation } from "../../lib/n8n";
 import { mutationRejected, noStoreHeaders, recordAudit } from "../../lib/security";
 
 type RuntimeEnv = {
@@ -40,6 +41,61 @@ function normalize(row: Record<string, unknown>) {
     status: row.status || "published",
     createdAt: row.created_at,
   };
+}
+
+async function loadActiveSubscriberEmails(db: D1Database) {
+  await db.prepare(`CREATE TABLE IF NOT EXISTS mail_subscribers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL DEFAULT '',
+    email TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'active',
+    source TEXT NOT NULL DEFAULT 'website',
+    consent INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`).run();
+  const result = await db
+    .prepare(
+      `SELECT name, email FROM mail_subscribers
+        WHERE status = 'active' AND consent = 1
+        ORDER BY id ASC
+        LIMIT 500`,
+    )
+    .all();
+  return (result.results as Record<string, unknown>[]).map((row) => ({
+    name: String(row.name || ""),
+    email: String(row.email || ""),
+  }));
+}
+
+function isUpcomingDate(dateValue: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  return dateValue >= today;
+}
+
+async function maybeNotifyEventMail(
+  db: D1Database,
+  event: ReturnType<typeof normalize>,
+  previousStatus?: string,
+) {
+  if (event.status !== "published") return;
+  if (!isUpcomingDate(String(event.date))) return;
+  // Notify on create-as-published, or when moving draft → published
+  if (previousStatus && previousStatus === "published") return;
+
+  const subscribers = await loadActiveSubscriberEmails(db);
+  await notifyEventMailAutomation({
+    id: event.id,
+    title: event.title,
+    date: event.date,
+    time: event.time,
+    location: event.location,
+    category: event.category,
+    description: event.description,
+    recurring: event.recurring,
+    subscriberCount: subscribers.length,
+    subscribers,
+  });
 }
 
 export async function GET(request: Request) {
@@ -133,9 +189,11 @@ export async function POST(request: Request) {
       )
       .first();
 
-    await recordAudit(db, user.id, "event.create", "community_event", Number((row as Record<string, unknown>).id));
+    const event = normalize(row as Record<string, unknown>);
+    await recordAudit(db, user.id, "event.create", "community_event", Number(event.id));
+    await maybeNotifyEventMail(db, event);
     return Response.json(
-      { event: normalize(row as Record<string, unknown>) },
+      { event },
       { status: 201, headers: noStoreHeaders() }
     );
   } catch {
@@ -183,6 +241,13 @@ export async function PATCH(request: Request) {
 
     const db = runtime().DB;
     await ensureSchema(db);
+    const existing = await db
+      .prepare("SELECT status FROM community_events WHERE id = ?")
+      .bind(id)
+      .first<Record<string, unknown>>();
+    if (!existing) {
+      return Response.json({ error: "Event not found" }, { status: 404 });
+    }
 
     const row = await db
       .prepare(`UPDATE community_events SET
@@ -207,9 +272,11 @@ export async function PATCH(request: Request) {
       return Response.json({ error: "Event not found" }, { status: 404 });
     }
 
+    const event = normalize(row as Record<string, unknown>);
     await recordAudit(db, user.id, "event.update", "community_event", id);
+    await maybeNotifyEventMail(db, event, String(existing.status || ""));
     return Response.json(
-      { event: normalize(row as Record<string, unknown>) },
+      { event },
       { headers: noStoreHeaders() }
     );
   } catch {

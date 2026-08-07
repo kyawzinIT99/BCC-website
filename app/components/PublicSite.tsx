@@ -13,6 +13,7 @@ import {
   type PublicLanguage,
 } from "./PublicHeader";
 import { PublicQuestionWidget } from "./PublicQuestionWidget";
+import { MailSubscribe } from "./MailSubscribe";
 
 const copy = {
   en: {
@@ -455,6 +456,8 @@ export function PublicSite() {
           </div>
         </div>
       </section>
+
+      <MailSubscribe source="home" />
 
       {/* ── Footer ───────────────────────────────────────────── */}
       <footer className="v2-footer">

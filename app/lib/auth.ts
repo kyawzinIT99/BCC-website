@@ -23,6 +23,8 @@ type AuthRuntime = {
   N8N_INQUIRY_ALERT_WEBHOOK?: string;
   N8N_INQUIRY_WEBHOOK_SECRET?: string;
   N8N_PUBLISH_WEBHOOK?: string;
+  N8N_SUBSCRIBE_ALERT_WEBHOOK?: string;
+  N8N_EVENT_MAIL_WEBHOOK?: string;
   N8N_BASE_URL?: string;
   N8N_API_KEY?: string;
 };

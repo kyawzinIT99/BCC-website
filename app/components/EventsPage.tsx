@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PublicHeader, type PublicLanguage } from "./PublicHeader";
 import { PublicQuestionWidget } from "./PublicQuestionWidget";
+import { MailSubscribe } from "./MailSubscribe";
 
 type CommunityEvent = {
   id: number;
@@ -255,6 +256,8 @@ export function EventsPage() {
           </div>
         )}
       </section>
+
+      <MailSubscribe source="events" compact />
 
       {/* ── CTA ──────────────────────────────────────────────── */}
       <section className="v2-events-cta">

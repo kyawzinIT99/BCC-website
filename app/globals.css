@@ -104,20 +104,54 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .main-nav {
   display: flex;
   align-items: center;
-  gap: clamp(18px, 2.6vw, 38px);
-  font-size: 13px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: clamp(10px, 1.4vw, 22px);
+  max-width: min(820px, 62vw);
+  font-size: clamp(11px, 0.95vw, 13px);
   font-weight: 700;
+  letter-spacing: 0.01em;
 }
 .main-nav a { transition: opacity .2s ease, transform .2s ease; }
 .main-nav a:hover { opacity: .62; transform: translateY(-1px); }
 .main-nav .public-cta {
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: 1px solid var(--wattle);
   border-radius: 999px;
   background: var(--wattle);
   color: var(--ocean);
+  white-space: nowrap;
 }
-.menu-toggle { display: none; border: 0; background: none; color: inherit; font-weight: 800; }
+.menu-toggle {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 12px;
+  cursor: pointer;
+}
+.menu-toggle-bars {
+  width: 18px;
+  display: grid;
+  gap: 3px;
+}
+.menu-toggle-bars i {
+  display: block;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+}
+.public-nav-backdrop,
+.public-nav-panel {
+  display: none;
+}
 
 .hero {
   width: 100%;
@@ -456,6 +490,73 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
   top: auto;
   padding-block: 18px;
   box-shadow: none;
+}
+
+/* Always-visible professional menu bar (no hamburger) */
+.bcc-menubar-top {
+  gap: 18px;
+}
+.bcc-menubar-cta {
+  margin-left: auto;
+  padding: 11px 18px;
+  border: 1px solid var(--wattle);
+  border-radius: 999px;
+  background: var(--wattle);
+  color: var(--ocean);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.bcc-menubar-strip {
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  background: #0a3050;
+}
+.bcc-menubar-strip-inner {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 clamp(12px, 3vw, 48px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: visible;
+}
+.bcc-menubar-strip-inner a {
+  flex: 1 1 auto;
+  min-height: 46px;
+  min-width: max-content;
+  padding: 12px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+}
+@media (max-width: 640px) {
+  .bcc-menubar-strip-inner a {
+    flex: 1 1 46%;
+    justify-content: flex-start;
+    font-size: 13px;
+  }
+  /* Never bring back the old hamburger Menu button */
+  .menu-toggle { display: none !important; }
+  .desktop-nav { display: none !important; }
+  .public-nav-backdrop,
+  .public-nav-panel { display: none !important; }
+}
+.bcc-menubar-strip-inner a:hover,
+.bcc-menubar-strip-inner a:focus-visible {
+  color: white;
+  background: rgba(255, 255, 255, 0.06);
+  outline: none;
+}
+.bcc-menubar-strip-inner a.active,
+.bcc-menubar-strip-inner a[aria-current="page"] {
+  color: var(--wattle);
+  border-bottom-color: var(--wattle);
 }
 .public-brand-cluster {
   display: flex;
@@ -4129,11 +4230,53 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
   .v2-join-inner { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 1020px) {
+  /* Keep the full professional nav visible while the Chrome window
+     sits beside Cursor. Only collapse on real phone widths below. */
+  .independent-label { display: none; }
+  .public-brand-cluster { gap: 12px; }
+  .site-header {
+    flex-wrap: wrap;
+    gap: 12px 18px;
+    align-items: center;
+  }
+  .desktop-nav {
+    display: flex !important;
+    flex: 1 1 100%;
+    max-width: none;
+    order: 3;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .menu-toggle { display: none !important; }
+  .public-nav-backdrop,
+  .public-nav-panel {
+    display: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Phone: keep always-visible wrapping menubar; never restore hamburger */
+  .menu-toggle,
+  .public-nav-backdrop,
+  .public-nav-panel,
+  .desktop-nav {
+    display: none !important;
+  }
+  .independent-label { display: none; }
+  .bcc-menubar-cta {
+    padding: 10px 14px;
+    font-size: 11px;
+  }
+}
+
 @media (max-width: 780px) {
   .announcement { justify-content: flex-start; font-size: 10px; }
   .announcement a { display: none; }
-  .menu-toggle { display: block; }
-  .main-nav {
+  .main-nav:not(.desktop-nav) {
     padding: 20px;
     position: absolute;
     z-index: 20;
@@ -4146,7 +4289,7 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
     background: var(--ink);
     color: white;
   }
-  .main-nav.is-open { display: flex; }
+  .main-nav:not(.desktop-nav).is-open { display: flex; }
   .hero { padding-top: 48px; }
   .hero h1 { font-size: clamp(64px, 20vw, 96px); }
   .hero-intro { font-size: 18px; }
@@ -4162,7 +4305,7 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
   .program-card { min-height: 340px; }
   .flow-track { grid-template-columns: 1fr; }
   .section-header { align-items: flex-start; }
-  .section-nav {
+  .section-nav:not(.desktop-nav) {
     display: none;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
@@ -4170,7 +4313,7 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
     padding: 0;
     background: transparent;
   }
-  .section-nav.is-open { display: grid; }
+  .section-nav:not(.desktop-nav).is-open { display: grid; }
   .section-nav a[aria-current="page"]::after { display: none; }
   .section-page-hero { min-height: auto; padding-top: 70px; }
   .section-page-hero h1 { font-size: clamp(56px, 17vw, 88px); }

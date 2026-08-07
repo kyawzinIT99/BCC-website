@@ -79,7 +79,11 @@ export function GalleryPage() {
 
   return (
     <main className="public-site civic-public-site v2-redesign">
-      <PublicHeader language={language} onLanguageChange={setLanguage} />
+      <PublicHeader
+        activeHref="/gallery"
+        language={language}
+        onLanguageChange={setLanguage}
+      />
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="v2-gallery-hero">

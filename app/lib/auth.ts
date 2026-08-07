@@ -18,8 +18,13 @@ type AuthRuntime = {
   BOOTSTRAP_ADMIN_PASSWORD?: string;
   ADMIN_WRITE_TOKEN?: string;
   CRM_ALERTS_ENABLED?: string;
+  CRM_TELEGRAM_CHAT_ID?: string;
+  CRM_ALERT_EMAIL?: string;
   N8N_INQUIRY_ALERT_WEBHOOK?: string;
   N8N_INQUIRY_WEBHOOK_SECRET?: string;
+  N8N_PUBLISH_WEBHOOK?: string;
+  N8N_BASE_URL?: string;
+  N8N_API_KEY?: string;
 };
 
 const sessionCookie = "common_kind_session";

@@ -131,7 +131,7 @@ test("publishes the supplied BCCWA history and committee directory clearly", asy
 });
 
 test("defines the separate staff Admin Panel", async () => {
-  const [admin, pageManager, pagesApi, login, team, assistant, assistantApi, knowledge, auth, usersApi, inquiryAlert, operations, inquiriesApi, mediaApi] = await Promise.all([
+  const [admin, pageManager, pagesApi, login, team, assistant, assistantApi, knowledge, auth, usersApi, inquiryAlert, operations, inquiriesApi, mediaApi, n8n, postsApi] = await Promise.all([
     readFile(new URL("../app/admin/AdminDashboard.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/admin/PageManager.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/pages/route.ts", import.meta.url), "utf8"),
@@ -146,6 +146,8 @@ test("defines the separate staff Admin Panel", async () => {
     readFile(new URL("../app/admin/AdminOperations.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/inquiries/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/media/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/n8n.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/posts/route.ts", import.meta.url), "utf8"),
   ]);
 
   assert.match(pageManager, /Hero image URL/);
@@ -204,8 +206,13 @@ test("defines the separate staff Admin Panel", async () => {
   assert.match(inquiriesApi, /assigned_to/);
   assert.match(inquiriesApi, /follow_up_by/);
   assert.match(inquiriesApi, /community\.inquiry\.created/);
-  assert.match(inquiriesApi, /N8N_INQUIRY_ALERT_WEBHOOK/);
-  assert.match(inquiriesApi, /X-Common-Kind-Secret/);
+  assert.match(inquiriesApi, /notifyInquiryAutomation/);
+  assert.match(n8n, /N8N_INQUIRY_ALERT_WEBHOOK/);
+  assert.match(n8n, /N8N_PUBLISH_WEBHOOK/);
+  assert.match(n8n, /X-Common-Kind-Secret/);
+  assert.match(postsApi, /notifyPublishAutomation/);
+  assert.match(admin, /n8n AI automation/);
+  assert.match(admin, /Dynamic site linked to n8n/);
   assert.match(pageManager, /Page feature cards/);
   assert.match(pageManager, /Edit website page/);
   assert.match(pageManager, /useState<PageSelection>\("about"\)/);

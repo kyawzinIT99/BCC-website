@@ -103,7 +103,11 @@ export function EventsPage() {
 
   return (
     <main className="public-site civic-public-site v2-redesign">
-      <PublicHeader language={language} onLanguageChange={setLanguage} />
+      <PublicHeader
+        activeHref="/events"
+        language={language}
+        onLanguageChange={setLanguage}
+      />
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="v2-events-hero">

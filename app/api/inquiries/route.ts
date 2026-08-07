@@ -1,4 +1,5 @@
 import { authRuntime, authenticateRequest } from "../../lib/auth";
+import { notifyInquiryAutomation } from "../../lib/n8n";
 import {
   checkRateLimit,
   mutationRejected,
@@ -47,32 +48,6 @@ async function ensureSchema(db: D1Database) {
         throw error;
       }
     }
-  }
-}
-
-async function notifyN8n(payload: Record<string, unknown>) {
-  const runtime = authRuntime();
-  const webhook = runtime.N8N_INQUIRY_ALERT_WEBHOOK?.trim();
-  if (runtime.CRM_ALERTS_ENABLED !== "true" || !webhook) {
-    return "disabled";
-  }
-  try {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "User-Agent": "Common-Kind-CRM/1.0",
-    };
-    if (runtime.N8N_INQUIRY_WEBHOOK_SECRET) {
-      headers["X-Common-Kind-Secret"] = runtime.N8N_INQUIRY_WEBHOOK_SECRET;
-    }
-    const response = await fetch(webhook, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(5_000),
-    });
-    return response.ok ? "delivered" : "failed";
-  } catch {
-    return "failed";
   }
 }
 
@@ -179,7 +154,7 @@ export async function POST(request: Request) {
     )
     .first();
   const reference = Number((row as Record<string, unknown>).id);
-  const notification = await notifyN8n({
+  const notification = await notifyInquiryAutomation({
     event: "community.inquiry.created",
     reference: `CK-${reference}`,
     source,
@@ -198,6 +173,12 @@ export async function POST(request: Request) {
     await recordAudit(db, null, "inquiry.webhook-failed", "public_inquiry", reference, {
       source,
       kind,
+    });
+  } else if (notification === "delivered") {
+    await recordAudit(db, null, "inquiry.webhook-delivered", "public_inquiry", reference, {
+      source,
+      kind,
+      automation: "n8n",
     });
   }
   return Response.json(

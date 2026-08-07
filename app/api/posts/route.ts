@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { sectionKeys, type SectionKey } from "../../lib/sections";
 import { authenticateRequest } from "../../lib/auth";
+import { notifyPublishAutomation } from "../../lib/n8n";
 import {
   mutationRejected,
   noStoreHeaders,
@@ -10,6 +11,7 @@ import {
 type RuntimeEnv = {
   DB: D1Database;
   ADMIN_WRITE_TOKEN?: string;
+  N8N_PUBLISH_WEBHOOK?: string;
 };
 
 function runtime() {
@@ -281,6 +283,34 @@ export async function POST(request: Request) {
       });
     }
 
+    if (status === "published") {
+      const automation = await notifyPublishAutomation({
+        id: post.id,
+        slug: post.slug,
+        title: post.title,
+        excerpt: post.excerpt,
+        category: post.category,
+        placement: post.placement,
+        channels: post.channels,
+        author: post.author,
+        publishedAt: post.date,
+      });
+      if (automation === "failed") {
+        await recordAudit(db, staffUser?.id ?? null, "post.webhook-failed", "post", Number(post.id), {
+          placement,
+        });
+      } else if (automation === "delivered") {
+        await recordAudit(
+          db,
+          staffUser?.id ?? null,
+          "post.webhook-delivered",
+          "post",
+          Number(post.id),
+          { placement, automation: "n8n" },
+        );
+      }
+    }
+
     return Response.json({ post }, { status: 201 });
   } catch {
     return Response.json(
@@ -373,8 +403,9 @@ export async function PATCH(request: Request) {
         id,
       )
       .first();
+    const previousStatus = String((existing as Record<string, unknown>).status);
     await recordAudit(db, staffUser.id, `post.${status}`, "post", id, {
-      previousStatus: String((existing as Record<string, unknown>).status),
+      previousStatus,
       placement,
     });
     const storedPost = await db
@@ -382,10 +413,31 @@ export async function PATCH(request: Request) {
         FROM posts p LEFT JOIN media m ON m.id = p.media_id WHERE p.id = ?`)
       .bind(Number((row as Record<string, unknown>).id))
       .first();
-    return Response.json(
-      { post: normalize(storedPost as Record<string, unknown>) },
-      { headers: noStoreHeaders() },
-    );
+    const post = normalize(storedPost as Record<string, unknown>);
+
+    if (status === "published" && previousStatus !== "published") {
+      const automation = await notifyPublishAutomation({
+        id: post.id,
+        slug: post.slug,
+        title: post.title,
+        excerpt: post.excerpt,
+        category: post.category,
+        placement: post.placement,
+        channels: post.channels,
+        author: post.author,
+        publishedAt: post.date,
+      });
+      if (automation === "failed") {
+        await recordAudit(db, staffUser.id, "post.webhook-failed", "post", id, { placement });
+      } else if (automation === "delivered") {
+        await recordAudit(db, staffUser.id, "post.webhook-delivered", "post", id, {
+          placement,
+          automation: "n8n",
+        });
+      }
+    }
+
+    return Response.json({ post }, { headers: noStoreHeaders() });
   } catch {
     return Response.json({ error: "Unable to update post" }, { status: 500 });
   }

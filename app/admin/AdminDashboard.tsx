@@ -483,26 +483,26 @@ export function AdminDashboard() {
             <div className="integration-list">
               {[
                 ["WB", "Website", "Available"],
-                ["FB", "Facebook import", "Deferred — authorisation required"],
-                ["N8", "n8n distribution", "Deferred"],
-                ["EM", "Email", "Deferred until domain"],
+                ["N8", "n8n AI automation", "Connected"],
+                ["IQ", "Inquiry alerts", "Connected"],
+                ["FB", "Facebook / Telegram channels", "Ready for channel credentials"],
               ].map(([code, label, status]) => (
                 <article key={label}>
                   <span>{code}</span>
                   <p>{label}<small>{status}</small></p>
-                  <i className={status === "Available" ? "healthy" : ""} />
+                  <i className={status === "Available" || status === "Connected" ? "healthy" : ""} />
                 </article>
               ))}
             </div>
             <div className="automation-explainer">
-              <p>DEPLOYMENT BOUNDARY</p>
-              <h3>No external distribution yet.</h3>
+              <p>AI AUTOMATION</p>
+              <h3>Dynamic site linked to n8n.</h3>
               <p>
-                Website publishing is available after administrator approval.
-                n8n and Facebook remain inactive until credentials and explicit authorisation are supplied.
+                After administrator approval, published posts and community inquiries
+                are handed to n8n for AI automation. Draft and review content stays private.
               </p>
               <div className="mini-flow">
-                <span>Draft</span><b>→</b><span>Review</span><b>→</b><span>Website</span>
+                <span>Draft</span><b>→</b><span>Review</span><b>→</b><span>Website</span><b>→</b><span>n8n AI</span>
               </div>
             </div>
           </aside>

@@ -1,0 +1,30 @@
+---
+description: BCC hosting, n8n automation, and CRM decisions from project planning
+alwaysApply: true
+---
+
+# BCC platform memory
+
+## Product
+- Burmese Catholic Community of Western Australia dynamic website + staff Admin Panel.
+- GitHub: `https://github.com/kyawzinIT99/BCC-website.git`
+
+## Hosting split (do not change without owner confirmation)
+- **Hostinger Pro**: domain, SSL, up to 10 mailboxes (planned; not in API portfolio yet).
+- **Existing Hostinger KVM 2 VPS** (`srv1707349.hstgr.cloud`, IP `76.13.194.176`, Ubuntu 24.04 + Docker/Traefik): currently runs n8n (`n8n-al8a.srv1707349.hstgr.cloud`). Keep AI/CRM automation here. Do **not** buy another VPS just for n8n.
+- **Coming Linux VPS / website essentials**: deploy BCC website (app, DB, media, reverse proxy, backups) — either on a new VPS or as additional Docker services on this KVM 2 if capacity allows. Prefer not duplicating n8n.
+- Hostinger API connected via `HOSTINGER_API_TOKEN` in `.dev.vars` (never commit). Base: `https://developers.hostinger.com`.
+
+## Recently built n8n workflows (already integrated)
+- `BCC Inquiry Alert` → webhook `/webhook/bcc-inquiry-alert` (CRM inquiries → Telegram/email).
+- `BCC Publish Distribution` → webhook `/webhook/bcc-publish-distribution` (after authorised publish).
+- Website env: `CRM_ALERTS_ENABLED`, `N8N_INQUIRY_ALERT_WEBHOOK`, `N8N_PUBLISH_WEBHOOK` in `.dev.vars` (never commit secrets).
+
+## Pending owner inputs
+- Telegram bot API key + staff `CRM_TELEGRAM_CHAT_ID` (and optional `CRM_ALERT_EMAIL`) to finish live CRM alerts.
+- Hostinger Pro domain purchase/attach + mailbox setup when ready.
+- Decide website deploy target: new Linux VPS vs Docker services on existing KVM 2.
+
+## Editorial / reputation
+- Draft → review → publish → then n8n only. Never send drafts to automation.
+- No government/endorsement claims without written evidence.

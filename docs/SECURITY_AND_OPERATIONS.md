@@ -44,7 +44,8 @@ public runtime, and the development server must never be exposed publicly.
 
 ## Deferred integrations
 
-n8n distribution and Facebook import are intentionally inactive. Telegram,
-email distribution, payments, donations, and automatic public replies are also
-inactive. Each requires explicit credentials, least-privilege setup, written
-approval, staging tests, and a documented rollback before activation.
+n8n AI automation webhooks for published posts and inquiry alerts may be enabled
+through protected environment secrets. Facebook/Telegram channel credentials,
+payments, donations, and automatic public replies remain inactive until
+explicit credentials, least-privilege setup, written approval, staging tests,
+and a documented rollback are completed.

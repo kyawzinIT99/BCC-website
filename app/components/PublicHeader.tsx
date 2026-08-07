@@ -24,20 +24,27 @@ export function PublicHeader({
   language?: PublicLanguage;
   onLanguageChange?: (language: PublicLanguage) => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
   const currentLanguage =
     publicLanguages.find((option) => option.code === language) ?? publicLanguages[0];
 
+  function isActive(href: string) {
+    if (!activeHref) return false;
+    if (href === "/") return activeHref === "/";
+    return activeHref === href;
+  }
+
+  const primaryLinks = publicNavigation.filter((item) => !("cta" in item && item.cta));
+  const cta = publicNavigation.find((item) => "cta" in item && item.cta);
+
   return (
-    <div className="public-header-shell">
-      <header className="site-header section-header">
+    <div className="public-header-shell bcc-menubar">
+      <header className="site-header section-header bcc-menubar-top">
         <div className="public-brand-cluster">
           <Link
             className="wordmark"
             href="/"
             aria-label="Burmese Catholic Community of Western Australia home"
-            onClick={() => setMenuOpen(false)}
           >
             <LogoMark />
             <span className="brand-name">
@@ -48,43 +55,31 @@ export function PublicHeader({
           </Link>
           <span className="independent-label">Independent community organisation</span>
         </div>
-        <button
-          className="menu-toggle"
-          type="button"
-          aria-expanded={menuOpen}
-          aria-controls="public-navigation"
-          aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-          onClick={() => setMenuOpen((value) => !value)}
-        >
-          {menuOpen ? "Close" : "Menu"}
-        </button>
-        <nav
-          className={menuOpen ? "main-nav section-nav is-open" : "main-nav section-nav"}
-          id="public-navigation"
-          aria-label="Public pages"
-        >
-          {publicNavigation.map((item) => {
-            const active = item.href === activeHref;
+        {cta && (
+          <Link className="public-cta bcc-menubar-cta" href={cta.href}>
+            {cta.label}
+          </Link>
+        )}
+      </header>
 
+      <nav className="bcc-menubar-strip" aria-label="All community pages">
+        <div className="bcc-menubar-strip-inner">
+          {primaryLinks.map((item) => {
+            const active = isActive(item.href);
             return (
               <Link
-                className={[
-                  active ? "active" : "",
-                  item.href === "/get-involved" ? "public-cta" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                href={item.href}
                 key={item.href}
+                href={item.href}
+                className={active ? "active" : undefined}
                 aria-current={active ? "page" : undefined}
-                onClick={() => setMenuOpen(false)}
               >
                 {item.label}
               </Link>
             );
           })}
-        </nav>
-      </header>
+        </div>
+      </nav>
+
       <div className="language-access">
         <button
           type="button"

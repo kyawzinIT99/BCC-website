@@ -98,10 +98,12 @@ export const sectionDefinitions: Record<SectionKey, SectionDefinition> = {
 };
 
 export const publicNavigation = [
-  ...sectionKeys.map((key) => ({
-    href: `/${key}`,
-    label: sectionDefinitions[key].label,
-  })),
-  { href: "/gallery", label: "Gallery" },
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/our-work", label: "Our work" },
+  { href: "/stories", label: "News & stories" },
   { href: "/events", label: "Events" },
-];
+  { href: "/gallery", label: "Gallery" },
+  { href: "/approach", label: "Our approach" },
+  { href: "/get-involved", label: "Get involved", cta: true },
+] as const;

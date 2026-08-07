@@ -35,6 +35,9 @@ def website():
         "CRM_ALERTS_ENABLED",
         "N8N_INQUIRY_ALERT_WEBHOOK",
         "N8N_INQUIRY_WEBHOOK_SECRET",
+        "N8N_PUBLISH_WEBHOOK",
+        "N8N_BASE_URL",
+        "N8N_API_KEY",
     ]
     binding_lines = [
         f'{key}="{environment.get(key, "").replace("\\", "\\\\").replace(chr(34), "\\\"")}"'

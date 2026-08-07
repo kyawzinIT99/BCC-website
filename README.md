@@ -33,20 +33,27 @@ The Australia-inspired palette remains in place. The public wordmark now uses th
 
 ```mermaid
 flowchart LR
-  Owner["Website Owner"] --> Users["Staff accounts and roles"]
-  Users --> Staff["Staff Admin Panel"]
+  Visitors["Public visitors"] --> Domain["Hostinger Pro domain + SSL"]
+  Domain --> SiteVPS["New Linux VPS: website essentials"]
+  SiteVPS --> Public["Public website"]
+  SiteVPS --> Staff["Staff Admin Panel"]
   Staff --> API["Backend APIs"]
-  API --> DB["D1 / SQL database"]
-  API --> Media["R2 media storage"]
-  DB --> Public["Public website"]
-  API -. deferred .-> N8N["n8n automation"]
-  N8N -. authorised later .-> FB["Facebook"]
-  N8N -. authorised later .-> TG["Telegram"]
-  N8N -. authorised later .-> Email["Email"]
-  HPanel["Hostinger hPanel owner"] --> Infra["Domain, email, SSL, security"]
+  API --> DB["SQL database"]
+  API --> Media["Media storage"]
+  API -->|"published posts + inquiries"| N8N["Existing Hostinger VPS: n8n"]
+  N8N --> TG["Telegram CRM alerts"]
+  N8N --> Mail["Staff email alerts"]
+  N8N -. later .-> FB["Facebook / channels"]
+  HPanel["Hostinger hPanel"] --> Domain
+  HPanel --> Mailboxes["10 mailboxes"]
 ```
 
-The Hostinger hPanel account and the application Admin Panel are separate. The hPanel password is never stored in the application database. The website Owner creates staff accounts and roles in Team Access; Hostinger access remains owner-only for hosting, domains, email, billing, SSL, backups, and infrastructure security.
+Hosting split:
+
+- **Hostinger Pro** — domain, SSL certificates, and up to 10 organisation mailboxes.
+- **Existing Hostinger VPS (n8n)** — keep using the recently built BCC workflows there: `BCC Inquiry Alert` and `BCC Publish Distribution`. Do not reinstall n8n on the new VPS.
+- **New Linux VPS** — website essentials only: app runtime, database, media, reverse proxy, backups, and monitoring.
+- **hPanel vs Admin Panel** — hPanel is owner infrastructure; the application Admin Panel is staff content and accounts only. The hPanel password is never stored in the application database.
 
 ## Folder structure
 
@@ -113,7 +120,12 @@ npm run db:generate
 BOOTSTRAP_ADMIN_EMAIL=
 BOOTSTRAP_ADMIN_PASSWORD=
 ADMIN_WRITE_TOKEN=
-# N8N_PUBLISH_WEBHOOK=  reserved; leave unset
+N8N_PUBLISH_WEBHOOK=
+N8N_INQUIRY_ALERT_WEBHOOK=
+N8N_INQUIRY_WEBHOOK_SECRET=
+CRM_ALERTS_ENABLED=false
+N8N_BASE_URL=
+N8N_API_KEY=
 MR_KYAW_ZIN_AI_ENABLED=false
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.6
@@ -124,9 +136,11 @@ OPENAI_VECTOR_STORE_ID=
 
 Human staff use an HttpOnly, SameSite session cookie. Passwords are stored only as salted PBKDF2-SHA256 hashes. `ADMIN_WRITE_TOKEN` is optional and reserved for approved machine-to-machine automation through the `x-admin-token` header.
 
-The n8n webhook and authorised Facebook import are deliberately deferred. The
-current release does not call an external distribution endpoint when a post is
-published.
+This dynamic website is associated with n8n AI automation. When
+`N8N_PUBLISH_WEBHOOK` is set, an authorised publish posts to n8n. When
+`CRM_ALERTS_ENABLED=true` and `N8N_INQUIRY_ALERT_WEBHOOK` are set, new community
+inquiries also post to n8n. Draft and review content is never sent. Facebook and
+Telegram channel credentials remain optional additions inside the n8n workflows.
 
 ## MR.Kyaw Zin private assistant
 
@@ -202,7 +216,8 @@ signatures rather than trusting browser MIME metadata; SVG uploads are rejected.
 2. An authorised reviewer verifies claims, consent, media rights, and public copy.
 3. An Administrator or Owner publishes the reviewed item to the website.
 4. The backend records the prior revision and a protected audit event.
-5. No social, email, payment, or n8n action occurs in this release.
+5. If n8n webhooks are configured, only the published event (and separately
+   inquiry alerts) are handed to AI automation. Drafts are never sent.
 
 Historical Facebook content must be imported only after account authorisation and ownership review. It should enter the system as draft/review content, not publish automatically.
 
@@ -219,13 +234,13 @@ After design approval:
 
 ### Hostinger
 
-The final deployment depends on the purchased product’s current capabilities:
+Production uses a three-part Hostinger layout:
 
-- A managed Cloud plan can host the website when its supported Node/database features match the application.
-- Full Linux root access, unrestricted Docker Compose, and self-hosted n8n require a VPS or a separately hosted n8n instance.
-- Domain, mailbox, SSL, backup, and renewal entitlements must be checked against the current plan before purchase.
+1. **Pro plan** — domain, SSL, and organisation mailboxes.
+2. **Existing VPS** — the already-running n8n automation host (`n8n-al8a...hstgr.cloud`). Keep CRM inquiry alerts and publish automation there.
+3. **New Linux VPS** — website essentials: Node/vinext app, SQL database, media volume, HTTPS reverse proxy, encrypted backups, and uptime monitoring. Do not move n8n onto this VPS unless the existing automation host is retired later.
 
-No production purchase or deployment is performed by this local release.
+The vinext build currently targets a Cloudflare Worker-compatible local runtime. Before the new Linux VPS cutover, certify the Docker Compose path against that VPS image, wire production secrets, and point the domain to the new VPS while mail and SSL remain under Hostinger Pro/DNS.
 
 ### Linux container
 
@@ -269,7 +284,7 @@ Production should use scheduled database exports, media replication, encrypted o
 1. Approve brand, layout, and information architecture.
 2. Replace preview copy with authorised organisation content.
 3. Complete MFA, backup restoration, monitoring, and deployment secrets.
-4. Connect and test n8n only after explicit authorisation.
-5. Add authorised Facebook and Telegram integrations.
+4. Extend connected n8n AI workflows with authorised Facebook and Telegram actions.
+5. Add channel-specific credentials inside the BCC n8n workflows.
 6. Add payments only after legal wording and payment-provider approval.
 7. Deploy to the selected Hostinger architecture after entitlement verification.

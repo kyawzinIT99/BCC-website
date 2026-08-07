@@ -228,7 +228,11 @@ export function PublicSite() {
       </div>
 
       {/* ── Header ──────────────────────────────────────────── */}
-      <PublicHeader language={language} onLanguageChange={setLanguage} />
+      <PublicHeader
+        activeHref="/"
+        language={language}
+        onLanguageChange={setLanguage}
+      />
 
       {/* ── Cinematic Hero ──────────────────────────────────── */}
       <section

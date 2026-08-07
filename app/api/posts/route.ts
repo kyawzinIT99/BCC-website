@@ -1,0 +1,392 @@
+import { env } from "cloudflare:workers";
+import { sectionKeys, type SectionKey } from "../../lib/sections";
+import { authenticateRequest } from "../../lib/auth";
+import {
+  mutationRejected,
+  noStoreHeaders,
+  recordAudit,
+} from "../../lib/security";
+
+type RuntimeEnv = {
+  DB: D1Database;
+  ADMIN_WRITE_TOKEN?: string;
+};
+
+function runtime() {
+  return env as unknown as RuntimeEnv;
+}
+
+function slugify(value: string) {
+  return (
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 70) || `post-${Date.now()}`
+  );
+}
+
+async function canWrite(request: Request) {
+  if (await authenticateRequest(request)) return true;
+  const expected = runtime().ADMIN_WRITE_TOKEN;
+  return Boolean(expected && request.headers.get("x-admin-token") === expected);
+}
+
+async function ensureSchema(db: D1Database) {
+  await db.batch([
+    db.prepare(`CREATE TABLE IF NOT EXISTS posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT NOT NULL UNIQUE,
+      title TEXT NOT NULL,
+      excerpt TEXT NOT NULL DEFAULT '',
+      body TEXT NOT NULL DEFAULT '',
+      category TEXT NOT NULL DEFAULT 'Field notes',
+      placement TEXT NOT NULL DEFAULT 'stories',
+      status TEXT NOT NULL DEFAULT 'draft',
+      channels TEXT NOT NULL DEFAULT '[]',
+      author TEXT NOT NULL DEFAULT 'Community editor',
+      media_id INTEGER,
+      scheduled_at TEXT,
+      published_at TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare(
+      "CREATE INDEX IF NOT EXISTS posts_status_updated_idx ON posts(status, updated_at DESC)",
+    ),
+    db.prepare(`CREATE TABLE IF NOT EXISTS post_revisions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id INTEGER NOT NULL,
+      snapshot TEXT NOT NULL,
+      changed_by INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS media (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      object_key TEXT NOT NULL UNIQUE,
+      filename TEXT NOT NULL,
+      content_type TEXT NOT NULL,
+      size INTEGER NOT NULL,
+      alt_text TEXT NOT NULL DEFAULT '',
+      uploaded_by TEXT NOT NULL DEFAULT 'Community editor',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+  ]);
+  try {
+    await db
+      .prepare(
+        "ALTER TABLE posts ADD COLUMN placement TEXT NOT NULL DEFAULT 'stories'",
+      )
+      .run();
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !error.message.toLowerCase().includes("duplicate column")
+    ) {
+      throw error;
+    }
+  }
+  try {
+    await db.prepare("ALTER TABLE posts ADD COLUMN media_id INTEGER").run();
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !error.message.toLowerCase().includes("duplicate column")
+    ) {
+      throw error;
+    }
+  }
+  try {
+    await db.prepare("ALTER TABLE posts ADD COLUMN scheduled_at TEXT").run();
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !error.message.toLowerCase().includes("duplicate column")
+    ) {
+      throw error;
+    }
+  }
+}
+
+function normalize(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    excerpt: row.excerpt,
+    body: row.body,
+    category: row.category,
+    placement: row.placement || "stories",
+    status: row.status,
+    channels: JSON.parse(String(row.channels || "[]")),
+    author: row.author,
+    mediaId: row.media_id ? Number(row.media_id) : null,
+    mediaUrl: row.media_id ? `/api/media?id=${Number(row.media_id)}` : null,
+    mediaType: row.media_content_type ? String(row.media_content_type) : null,
+    mediaAlt: row.media_alt_text ? String(row.media_alt_text) : "",
+    scheduledAt: row.scheduled_at ? String(row.scheduled_at) : null,
+    date: row.published_at || row.updated_at,
+    visualLabel: "COMMUNITY UPDATE",
+  };
+}
+
+export async function GET(request: Request) {
+  try {
+    const db = runtime().DB;
+    if (!db) throw new Error("D1 binding DB is unavailable");
+    await ensureSchema(db);
+    const url = new URL(request.url);
+    const adminScope = url.searchParams.get("scope") === "admin";
+    if (adminScope && !(await canWrite(request))) {
+      return Response.json(
+        { error: "Authorized staff access is required" },
+        { status: 401 },
+      );
+    }
+    const requestedPlacement = url.searchParams.get("placement") || "";
+    const placement = sectionKeys.includes(requestedPlacement as SectionKey)
+      ? requestedPlacement
+      : null;
+    const result = adminScope
+      ? await db
+          .prepare(
+            `SELECT p.*, m.content_type AS media_content_type, m.alt_text AS media_alt_text
+              FROM posts p LEFT JOIN media m ON m.id = p.media_id
+              ORDER BY p.updated_at DESC, p.id DESC LIMIT 50`,
+          )
+          .all()
+      : placement
+        ? await db
+            .prepare(
+              `SELECT p.*, m.content_type AS media_content_type, m.alt_text AS media_alt_text
+                FROM posts p LEFT JOIN media m ON m.id = p.media_id
+                WHERE p.status = 'published' AND p.placement = ?
+                ORDER BY p.published_at DESC, p.id DESC LIMIT 50`,
+            )
+            .bind(placement)
+            .all()
+        : await db
+            .prepare(
+              `SELECT p.*, m.content_type AS media_content_type, m.alt_text AS media_alt_text
+                FROM posts p LEFT JOIN media m ON m.id = p.media_id
+                WHERE p.status = 'published'
+                ORDER BY p.published_at DESC, p.id DESC LIMIT 50`,
+            )
+            .all();
+    return Response.json({
+      posts: (result.results as Record<string, unknown>[]).map(normalize),
+    }, { headers: adminScope ? noStoreHeaders() : undefined });
+  } catch {
+    return Response.json(
+      { error: "Unable to load posts" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  const rejected = mutationRejected(request);
+  if (rejected) return rejected;
+  const staffUser = await authenticateRequest(request);
+  const expectedToken = runtime().ADMIN_WRITE_TOKEN;
+  const automationAuthorized = Boolean(
+    expectedToken && request.headers.get("x-admin-token") === expectedToken,
+  );
+  if (!staffUser && !automationAuthorized) {
+    return Response.json({ error: "Authorized staff access is required" }, { status: 401 });
+  }
+
+  try {
+    const payload = (await request.json()) as {
+      title?: string;
+      excerpt?: string;
+      body?: string;
+      category?: string;
+      placement?: SectionKey;
+      status?: "draft" | "review" | "published";
+      channels?: string[];
+      author?: string;
+      mediaId?: number | null;
+      scheduledAt?: string | null;
+    };
+    const title = payload.title?.trim() || "";
+    if (!title) {
+      return Response.json({ error: "title is required" }, { status: 400 });
+    }
+    if (
+      title.length > 140 ||
+      (payload.excerpt || "").length > 420 ||
+      (payload.body || "").length > 20_000 ||
+      (payload.category || "").length > 40
+    ) {
+      return Response.json({ error: "One or more fields exceed the allowed length" }, { status: 400 });
+    }
+
+    const allowedStatuses = new Set(["draft", "review", "published"]);
+    const status = allowedStatuses.has(payload.status || "") ? payload.status! : "draft";
+    if (status === "published" && staffUser?.role === "editor") {
+      return Response.json(
+        { error: "Administrator approval is required to publish" },
+        { status: 403 },
+      );
+    }
+    const channels = Array.isArray(payload.channels)
+      ? payload.channels.filter((item) => typeof item === "string").slice(0, 8)
+      : ["Website"];
+    const placement = sectionKeys.includes(payload.placement as SectionKey)
+      ? payload.placement!
+      : "stories";
+    const slug = `${slugify(title)}-${Date.now().toString(36)}`;
+    const mediaId =
+      Number.isSafeInteger(Number(payload.mediaId)) && Number(payload.mediaId) > 0
+        ? Number(payload.mediaId)
+        : null;
+    const db = runtime().DB;
+    if (!db) throw new Error("D1 binding DB is unavailable");
+    await ensureSchema(db);
+
+    const row = await db
+      .prepare(`INSERT INTO posts
+        (slug, title, excerpt, body, category, placement, status, channels, author, media_id, scheduled_at, published_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        RETURNING *`)
+      .bind(
+        slug,
+        title,
+        payload.excerpt?.trim() || "",
+        payload.body?.trim() || "",
+        payload.category || "Field notes",
+        placement,
+        status,
+        JSON.stringify(channels),
+        staffUser?.displayName || payload.author || "Approved automation",
+        mediaId,
+        null,
+        status === "published" ? new Date().toISOString() : null,
+      )
+      .first();
+
+    const storedPost = await db
+      .prepare(`SELECT p.*, m.content_type AS media_content_type, m.alt_text AS media_alt_text
+        FROM posts p LEFT JOIN media m ON m.id = p.media_id WHERE p.id = ?`)
+      .bind(Number((row as Record<string, unknown>).id))
+      .first();
+    const post = normalize(storedPost as Record<string, unknown>);
+
+    if (staffUser) {
+      await recordAudit(db, staffUser.id, "post.create", "post", Number(post.id), {
+        status,
+        placement,
+      });
+    }
+
+    return Response.json({ post }, { status: 201 });
+  } catch {
+    return Response.json(
+      { error: "Unable to save post" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  const rejected = mutationRejected(request);
+  if (rejected) return rejected;
+  const staffUser = await authenticateRequest(request);
+  if (!staffUser) {
+    return Response.json({ error: "Authorized staff access is required" }, { status: 401 });
+  }
+  try {
+    const payload = (await request.json()) as {
+      id?: number;
+      title?: string;
+      excerpt?: string;
+      body?: string;
+      category?: string;
+      placement?: SectionKey;
+      status?: "draft" | "review" | "published";
+      channels?: string[];
+      mediaId?: number | null;
+    };
+    const id = Number(payload.id);
+    const title = payload.title?.trim() || "";
+    if (
+      !Number.isSafeInteger(id) ||
+      !title ||
+      title.length > 140 ||
+      (payload.excerpt || "").length > 420 ||
+      (payload.body || "").length > 20_000
+    ) {
+      return Response.json({ error: "Valid post details are required" }, { status: 400 });
+    }
+    const allowedStatuses = new Set(["draft", "review", "published"]);
+    const status = allowedStatuses.has(payload.status || "") ? payload.status! : "draft";
+    if (status === "published" && staffUser.role === "editor") {
+      return Response.json(
+        { error: "Administrator approval is required to publish" },
+        { status: 403 },
+      );
+    }
+    const db = runtime().DB;
+    await ensureSchema(db);
+    const existing = await db.prepare("SELECT * FROM posts WHERE id = ?").bind(id).first();
+    if (!existing) return Response.json({ error: "Post not found" }, { status: 404 });
+    await db
+      .prepare(
+        "INSERT INTO post_revisions (post_id, snapshot, changed_by) VALUES (?, ?, ?)",
+      )
+      .bind(id, JSON.stringify(normalize(existing as Record<string, unknown>)), staffUser.id)
+      .run();
+    const placement = sectionKeys.includes(payload.placement as SectionKey)
+      ? payload.placement!
+      : "stories";
+    const channels = Array.isArray(payload.channels)
+      ? payload.channels.filter((item) => typeof item === "string").slice(0, 8)
+      : ["Website"];
+    const mediaId =
+      Number.isSafeInteger(Number(payload.mediaId)) && Number(payload.mediaId) > 0
+        ? Number(payload.mediaId)
+        : null;
+    const row = await db
+      .prepare(`UPDATE posts SET
+        title = ?, excerpt = ?, body = ?, category = ?, placement = ?,
+        status = ?, channels = ?, media_id = ?,
+        published_at = CASE
+          WHEN ? = 'published' AND published_at IS NULL THEN CURRENT_TIMESTAMP
+          WHEN ? != 'published' THEN NULL
+          ELSE published_at
+        END,
+        updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? RETURNING *`)
+      .bind(
+        title,
+        payload.excerpt?.trim() || "",
+        payload.body?.trim() || "",
+        (payload.category || "Field notes").slice(0, 40),
+        placement,
+        status,
+        JSON.stringify(channels),
+        mediaId,
+        status,
+        status,
+        id,
+      )
+      .first();
+    await recordAudit(db, staffUser.id, `post.${status}`, "post", id, {
+      previousStatus: String((existing as Record<string, unknown>).status),
+      placement,
+    });
+    const storedPost = await db
+      .prepare(`SELECT p.*, m.content_type AS media_content_type, m.alt_text AS media_alt_text
+        FROM posts p LEFT JOIN media m ON m.id = p.media_id WHERE p.id = ?`)
+      .bind(Number((row as Record<string, unknown>).id))
+      .first();
+    return Response.json(
+      { post: normalize(storedPost as Record<string, unknown>) },
+      { headers: noStoreHeaders() },
+    );
+  } catch {
+    return Response.json({ error: "Unable to update post" }, { status: 500 });
+  }
+}

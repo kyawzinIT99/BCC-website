@@ -1,0 +1,50 @@
+# Security and operations
+
+This document separates controls already implemented in the application from
+production controls that still depend on the selected hosting environment.
+
+## Implemented
+
+- Owner, Administrator, and Editor permissions are enforced by the API.
+- Staff passwords use salted PBKDF2-SHA256 hashes.
+- Sessions are random, stored only as hashes, expire after eight hours, and use
+  HttpOnly, SameSite, and Secure cookies when served over HTTPS.
+- New staff accounts must change their temporary password.
+- Login attempts are throttled in D1 and successful logins clear the counter.
+- Browser mutations require the request Origin to match the application origin.
+- Protected API results use `Cache-Control: no-store`.
+- The Worker adds CSP, anti-framing, MIME sniffing, referrer, permissions,
+  cross-origin, and HTTPS transport headers.
+- Uploads are limited to 15 MB, use an explicit format allowlist, reject SVG,
+  verify file signatures, and receive random object keys.
+- Post edits preserve the previous record as a revision.
+- Sign-in, staff, post, media, password, and inquiry-status actions are audited.
+- Public inquiries require consent, include a bot trap, have strict length
+  limits, and are rate-limited.
+- CI lints, tests, builds, and rejects high-severity production dependency
+  advisories.
+
+The locked production dependency audit currently reports zero known
+vulnerabilities. The development-only toolchain still includes advisories in
+transitive lint and migration packages; those packages are not shipped to the
+public runtime, and the development server must never be exposed publicly.
+
+## Required before production
+
+- Choose and verify the Hostinger or Cloudflare deployment architecture.
+- Store bootstrap and AI credentials in managed runtime secrets.
+- Configure MFA through an approved identity provider.
+- Apply D1 migrations and verify rollback in staging.
+- Configure encrypted database exports and R2 replication.
+- Perform a restore drill and record recovery time and recovery point results.
+- Configure uptime, error-rate, storage, and authentication-abuse alerts.
+- Review privacy, retention, consent, accessibility, and charity statements with
+  the organisation's authorised decision-maker.
+- Complete penetration testing before accepting sensitive production traffic.
+
+## Deferred integrations
+
+n8n distribution and Facebook import are intentionally inactive. Telegram,
+email distribution, payments, donations, and automatic public replies are also
+inactive. Each requires explicit credentials, least-privilege setup, written
+approval, staging tests, and a documented rollback before activation.

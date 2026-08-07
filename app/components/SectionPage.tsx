@@ -1,0 +1,369 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import {
+  cloneAboutProfile,
+  defaultAboutProfile,
+  type AboutProfile,
+  type CommitteeMember,
+} from "../lib/bcc-profile";
+import type { CommunityPost } from "../lib/content";
+import { sectionDefinitions, type SectionKey } from "../lib/sections";
+import { LogoMark } from "./LogoMark";
+import { PublicHeader, type PublicLanguage } from "./PublicHeader";
+import { CommunityContactForm } from "./CommunityContactForm";
+import { PublicQuestionWidget } from "./PublicQuestionWidget";
+
+function CommitteeCard({ member }: { member: CommitteeMember }) {
+  return (
+    <article className="committee-card">
+      <span>{member.role}</span>
+      <h3>{member.name}</h3>
+      <small>Community leadership</small>
+    </article>
+  );
+}
+
+export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
+  const section = sectionDefinitions[sectionKey];
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [pageCopy, setPageCopy] = useState(section);
+  const [aboutProfile, setAboutProfile] = useState<AboutProfile>(() => cloneAboutProfile());
+  const [language, setLanguage] = useState<PublicLanguage>("en");
+  const visibleFeatures = sectionKey === "our-work"
+    ? pageCopy.features.map((feature) =>
+        feature.number === "03" && feature.title === "Community care"
+          ? sectionDefinitions["our-work"].features[2]
+          : feature,
+      )
+    : pageCopy.features;
+
+  useEffect(() => {
+    if (sectionKey !== "stories") {
+      return;
+    }
+
+    fetch("/api/posts")
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((payload) => {
+        if (Array.isArray(payload.posts)) setPosts(payload.posts);
+      })
+      .catch(() => setPosts([]));
+  }, [sectionKey]);
+
+  useEffect(() => {
+    fetch(`/api/pages?key=${encodeURIComponent(sectionKey)}`, { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((payload) => {
+        if (payload.page) {
+          setPageCopy((current) => ({ ...current, ...payload.page }));
+          if (sectionKey === "about" && payload.page.about) {
+            setAboutProfile(payload.page.about);
+          }
+        }
+      })
+      .catch(() => {
+        setPageCopy(section);
+        if (sectionKey === "about") setAboutProfile(cloneAboutProfile(defaultAboutProfile));
+      });
+  }, [section, sectionKey]);
+
+  return (
+    <main className={`section-page section-${sectionKey}`}>
+      <PublicHeader
+        activeHref={`/${sectionKey}`}
+        language={language}
+        onLanguageChange={setLanguage}
+      />
+
+      <section className={`section-page-hero${sectionKey === "about" ? " has-feature-photo" : ""}${sectionKey === "our-work" ? " has-work-photo" : ""}`}>
+        {sectionKey === "about" ? (
+          <>
+            <figure className="section-about-photo">
+              {/* vinext's image optimizer does not serve this static WebP reliably. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/about-community-australia.webp"
+                alt="A diverse group preparing welcome and learning materials together in an Australian community setting."
+                width={1536}
+                height={1024}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+              />
+              <figcaption>Original concept image · Australian community collaboration</figcaption>
+            </figure>
+            <div className="section-about-copy">
+              <p className="section-about-kicker">
+                <span aria-hidden="true">01</span>
+                {pageCopy.eyebrow}
+              </p>
+              <h1 className="sr-only">{pageCopy.title}</h1>
+              <p className="section-lead">{pageCopy.summary}</p>
+            </div>
+          </>
+        ) : sectionKey === "our-work" ? (
+          <>
+            <div className="section-work-copy">
+              <p className="eyebrow">{pageCopy.eyebrow}</p>
+              <h1>{pageCopy.title}</h1>
+              <p className="section-lead">{pageCopy.summary}</p>
+            </div>
+            <figure className="section-work-photo">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/our-work-community.jpg"
+                alt="Young Burmese Catholic community members walking together outdoors in Western Australia."
+                loading="eager"
+                fetchPriority="high"
+              />
+              <figcaption>Faith, culture and community in Western Australia</figcaption>
+            </figure>
+          </>
+        ) : (
+          <>
+            <div>
+              <p className="eyebrow">{pageCopy.eyebrow}</p>
+              <h1>{pageCopy.title}</h1>
+              <p className="section-lead">{pageCopy.summary}</p>
+            </div>
+            <div className="section-emblem" aria-hidden="true">
+              <span>{section.label}</span>
+              <i />
+              <b>AU</b>
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="section-statement">
+        <p>{pageCopy.statement}</p>
+      </section>
+
+      {sectionKey === "stories" && (
+        <section className="story-feed-boundary" aria-labelledby="story-feed-boundary-title">
+          <div>
+            <p className="eyebrow">A clear content boundary</p>
+            <h2 id="story-feed-boundary-title">This is the changing news and stories feed.</h2>
+          </div>
+          <div>
+            <p>
+              Recent photographs, announcements and recaps appear here after administrator review.
+              The permanent explanation of the organisation&apos;s service remains on Our Work.
+              Any fundraising appeal must state its date, authorised beneficiary, collection method,
+              closing date and reporting commitment. Payment details appear only after organisation approval.
+            </p>
+            <Link href="/our-work">Read about Our Work <span aria-hidden="true">→</span></Link>
+          </div>
+        </section>
+      )}
+
+      {sectionKey === "stories" && (
+        <section className="facebook-community-panel" aria-labelledby="facebook-community-title">
+          <div>
+            <p className="eyebrow">Official community channel</p>
+            <h2 id="facebook-community-title">See community life as it happens.</h2>
+          </div>
+          <div className="facebook-community-action">
+            <p>
+              Visit the official Burmese Catholic Community of Western Australia
+              Facebook group for current conversations and activity updates.
+            </p>
+            <a
+              href="https://web.facebook.com/groups/115394412003293"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Visit the official Facebook group <span aria-hidden="true">↗</span>
+            </a>
+            <small>Facebook may require visitors to sign in.</small>
+          </div>
+        </section>
+      )}
+
+      <section className={`section-feature-grid${sectionKey === "our-work" ? " work-focus-grid" : ""}`}>
+        {visibleFeatures.map((feature, index) => (
+          <article key={feature.number}>
+            {sectionKey === "our-work" && (
+              <figure>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={["/community-story-faith.jpg", "/community-story-culture.jpg", "/community-story-care.jpg"][index]}
+                  alt={["Community members gathered at church", "Community members celebrating Burmese culture", "Community members meeting and planning together"][index]}
+                  loading="lazy"
+                />
+              </figure>
+            )}
+            <span>{feature.number}</span>
+            <h2>{feature.title}</h2>
+            <p>{feature.description}</p>
+          </article>
+        ))}
+      </section>
+
+      {sectionKey === "our-work" && (
+        <section className="work-updates-route" aria-labelledby="work-updates-title">
+          <div>
+            <p className="eyebrow">Looking for current activity?</p>
+            <h2 id="work-updates-title">Our Work explains what we do. News &amp; Stories shows what is happening now.</h2>
+          </div>
+          <div>
+            <p>
+              Recent photographs, announcements and community updates belong in one clear feed,
+              separate from this permanent overview of faith, culture and community care.
+            </p>
+            <Link className="button button-dark" href="/stories">View News &amp; Stories</Link>
+            <a href="https://web.facebook.com/groups/115394412003293" target="_blank" rel="noreferrer">
+              Visit the official Facebook group <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </section>
+      )}
+
+      {sectionKey === "about" && (
+        <>
+          <section className="bcc-history" aria-labelledby="bcc-history-title">
+            <div className="bcc-history-intro">
+              <div>
+                <p className="eyebrow">{aboutProfile.historyEyebrow}</p>
+                <h2 id="bcc-history-title">{aboutProfile.historyTitle}</h2>
+              </div>
+              <div className="bcc-history-copy">
+                {aboutProfile.historyBody.split(/\n\n+/).map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+              </div>
+            </div>
+
+            <div className="bcc-facts" aria-label="Organisation facts">
+              <article><span>Formed</span><strong>{aboutProfile.formed}</strong></article>
+              <article><span>Incorporated</span><strong>{aboutProfile.incorporated}</strong></article>
+              <article><span>Registered name</span><strong>{aboutProfile.legalName}</strong></article>
+              <article><span>ABN</span><strong>{aboutProfile.abn}</strong></article>
+            </div>
+          </section>
+
+          <section className="bcc-ministries" aria-labelledby="bcc-ministries-title">
+            <div className="bcc-section-heading">
+              <p className="eyebrow">{aboutProfile.focusEyebrow}</p>
+              <h2 id="bcc-ministries-title">{aboutProfile.focusTitle}</h2>
+            </div>
+            <div className="bcc-ministry-grid">
+              {aboutProfile.focuses.map((focus, index) => (
+                <article key={`${index}-${focus.title}`}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <h3>{focus.title}</h3>
+                  <p>{focus.description}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="bcc-committee" id="committee" aria-labelledby="bcc-committee-title">
+            <div className="bcc-section-heading committee-heading">
+              <div>
+                <p className="eyebrow">{aboutProfile.committeeEyebrow}</p>
+                <h2 id="bcc-committee-title">{aboutProfile.committeeTitle}</h2>
+              </div>
+              <p>
+                Meet the people entrusted with serving the community. For privacy,
+                personal contact details are not published. Updated {aboutProfile.committeeUpdated}.
+              </p>
+            </div>
+
+            <div className="committee-grid">
+              {aboutProfile.committee.slice(0, 11).map((member) => (
+                <CommitteeCard member={member} key={member.name} />
+              ))}
+            </div>
+
+            <details className="executive-directory">
+              <summary>
+                View all {aboutProfile.committee.slice(11).length} executive committee members
+                <span aria-hidden="true">+</span>
+              </summary>
+              <div className="committee-grid">
+                {aboutProfile.committee.slice(11).map((member) => (
+                  <CommitteeCard member={member} key={member.name} />
+                ))}
+              </div>
+            </details>
+          </section>
+
+          <section className="bcc-contact" aria-labelledby="bcc-contact-title">
+            <div>
+              <p className="eyebrow">Contact the community</p>
+              <h2 id="bcc-contact-title">One private starting point.</h2>
+            </div>
+            <div className="bcc-contact-action">
+              <p>
+                Send your enquiry through the secure community form. An authorised
+                administrator can direct it to the appropriate committee member.
+              </p>
+              <Link className="button button-light" href="/get-involved#community-contact">
+                Contact the community
+              </Link>
+              <small>Messages are recorded privately for responsible follow-up.</small>
+            </div>
+          </section>
+
+          <p className="bcc-source-note">
+            {aboutProfile.sourceNote}
+          </p>
+        </>
+      )}
+
+      {sectionKey === "stories" && (
+        <section className="section-published">
+          <div className="section-published-heading">
+            <p className="eyebrow">Recent approved updates</p>
+            <h2>News &amp; Stories feed</h2>
+          </div>
+          {posts.length ? (
+          <div className="section-published-grid">
+            {posts.map((post) => (
+              <article key={post.id}>
+                {post.mediaUrl && post.mediaType?.startsWith("image/") && (
+                  <figure>
+                    {/* Public media is served only when attached to a published post. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={post.mediaUrl}
+                      alt={post.mediaAlt || post.title}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </figure>
+                )}
+                <div className="section-published-copy">
+                  <span>{post.category}</span>
+                  <h3>{post.title}</h3>
+                  <p>{post.excerpt}</p>
+                  <time>{post.date}</time>
+                </div>
+              </article>
+            ))}
+          </div>
+          ) : (
+            <div className="section-empty">
+              <span>COMING INTO VIEW</span>
+              <p>Approved public updates for this section will appear here.</p>
+            </div>
+          )}
+        </section>
+      )}
+
+      {sectionKey === "get-involved" && <CommunityContactForm />}
+
+      <footer className="section-footer">
+        <Link className="wordmark" href="/">
+          <LogoMark />
+          <span>BURMESE CATHOLIC COMMUNITY WA</span>
+        </Link>
+        <p>Australian community action with a clear public purpose.</p>
+      </footer>
+      <PublicQuestionWidget language={language} />
+    </main>
+  );
+}

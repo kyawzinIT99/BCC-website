@@ -11,7 +11,8 @@ export function CommunityContactForm() {
     event.preventDefault();
     setSending(true);
     setNotice("");
-    const form = new FormData(event.currentTarget);
+    const formEl = event.currentTarget;
+    const form = new FormData(formEl);
     try {
       const response = await fetch("/api/inquiries", {
         method: "POST",
@@ -30,7 +31,7 @@ export function CommunityContactForm() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Unable to send your message");
-      event.currentTarget.reset();
+      formEl.reset();
       setNotice(
         `Thank you. Your formal enquiry is CK-${payload.reference}. ` +
         "It has entered the administrator follow-up queue.",

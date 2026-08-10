@@ -16,7 +16,8 @@ export function MailSubscribe({
     event.preventDefault();
     setBusy(true);
     setNotice("");
-    const form = new FormData(event.currentTarget);
+    const formEl = event.currentTarget;
+    const form = new FormData(formEl);
     try {
       const response = await fetch("/api/subscribers", {
         method: "POST",
@@ -37,7 +38,7 @@ export function MailSubscribe({
         payload.message ||
           "Thanks — you will receive community event updates by email.",
       );
-      event.currentTarget.reset();
+      formEl.reset();
     } catch (error) {
       setNotice(
         error instanceof Error ? error.message : "Unable to subscribe right now.",

@@ -14,7 +14,8 @@ export function PublicQuestionWidget({ language }: { language: PublicLanguage })
     event.preventDefault();
     setSending(true);
     setNotice("");
-    const form = new FormData(event.currentTarget);
+    const formEl = event.currentTarget;
+    const form = new FormData(formEl);
 
     try {
       const response = await fetch("/api/inquiries", {
@@ -34,7 +35,7 @@ export function PublicQuestionWidget({ language }: { language: PublicLanguage })
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Unable to send your question.");
-      event.currentTarget.reset();
+      formEl.reset();
       setNotice(
         `Thanks—your quick question was received as CK-${payload.reference}. ` +
         "For a staff reply or ongoing help, please use Get involved.",

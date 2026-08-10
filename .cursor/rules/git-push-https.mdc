@@ -1,0 +1,11 @@
+---
+description: Git push via HTTPS only (no SSH keys)
+alwaysApply: true
+---
+
+# Git push (BCC)
+
+- Always push with **HTTPS** to `https://github.com/...` — **never SSH** (`git@github.com:...`) and do not require or set up SSH keys for this repo.
+- Prefer `git push -u origin HEAD` / `git push origin HEAD` over SSH remotes.
+- If auth fails, use `gh auth login --hostname github.com --git-protocol https --web` (browser/device code), then `gh auth setup-git`, then retry HTTPS push.
+- Do not switch `origin` to SSH unless the owner explicitly asks.

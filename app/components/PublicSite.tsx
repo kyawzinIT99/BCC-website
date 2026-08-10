@@ -12,7 +12,6 @@ import {
   PublicHeader,
   type PublicLanguage,
 } from "./PublicHeader";
-import { PublicQuestionWidget } from "./PublicQuestionWidget";
 import { MailSubscribe } from "./MailSubscribe";
 
 const copy = {
@@ -506,8 +505,6 @@ export function PublicSite() {
           </div>
         </div>
       </footer>
-
-      <PublicQuestionWidget language={language} />
     </main>
   );
 }

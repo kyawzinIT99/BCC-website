@@ -170,9 +170,6 @@ export function AdminOperations({
   const formalInquiries = inquiries.filter((item) =>
     isFollowUpRequired(item.follow_up_required),
   );
-  const quickQuestions = inquiries.filter(
-    (item) => !isFollowUpRequired(item.follow_up_required) && item.status !== "closed",
-  );
   const today = new Date().toISOString().slice(0, 10);
 
   if (panel === "inquiries" && currentUser.role !== "editor") {
@@ -282,51 +279,6 @@ export function AdminOperations({
               );
             })}
             {!formalInquiries.length && <p>No formal follow-up enquiries yet.</p>}
-          </div>
-        </section>
-
-        <section className="operations-panel" id="quick-questions">
-          <div className="panel-heading">
-            <div><p>QUICK TRIAGE</p><h2>Ask a question</h2></div>
-            <span>{quickQuestions.length} awaiting triage</span>
-          </div>
-          <div className="quick-question-list">
-            {quickQuestions.slice(0, 20).map((item) => (
-              <article key={item.id}>
-                <div>
-                  <strong>CK-{item.id} · {item.name}</strong>
-                  {item.email && <a href={`mailto:${item.email}`}>{item.email}</a>}
-                  <p>{item.message}</p>
-                  <time dateTime={item.created_at}>{item.created_at}</time>
-                </div>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => void patchInquiry(
-                      item.id,
-                      { followUpRequired: true },
-                      { follow_up_required: true, status: "new" },
-                      `Quick question CK-${item.id} promoted to formal follow-up.`,
-                    )}
-                  >
-                    Promote to follow-up
-                  </button>
-                  <button
-                    className="button-quiet"
-                    type="button"
-                    onClick={() => void patchInquiry(
-                      item.id,
-                      { status: "closed" },
-                      { status: "closed" },
-                      `Quick question CK-${item.id} archived without staff reply.`,
-                    )}
-                  >
-                    No reply needed
-                  </button>
-                </div>
-              </article>
-            ))}
-            {!quickQuestions.length && <p>No quick questions require triage.</p>}
           </div>
         </section>
       </div>

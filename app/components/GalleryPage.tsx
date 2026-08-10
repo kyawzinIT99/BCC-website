@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { PublicHeader, type PublicLanguage } from "./PublicHeader";
-import { PublicQuestionWidget } from "./PublicQuestionWidget";
 
 type GalleryItem = {
   id: number;
@@ -316,8 +315,6 @@ export function GalleryPage() {
           Get Involved
         </Link>
       </section>
-
-      <PublicQuestionWidget />
     </main>
   );
 }

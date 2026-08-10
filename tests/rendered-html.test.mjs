@@ -3,14 +3,13 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("defines the Burmese Catholic Community of Western Australia public website", async () => {
-  const [page, homeModel, homeApi, header, sectionPage, contactForm, questionWidget, layout, styles] = await Promise.all([
+  const [page, homeModel, homeApi, header, sectionPage, contactForm, layout, styles] = await Promise.all([
     readFile(new URL("../app/components/PublicSite.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/home.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/home/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/components/PublicHeader.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/components/SectionPage.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/components/CommunityContactForm.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/components/PublicQuestionWidget.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
@@ -27,7 +26,8 @@ test("defines the Burmese Catholic Community of Western Australia public website
   assert.doesNotMatch(header, /label: "Burmese"|label: "Myanmar"/);
   assert.match(page, /<PublicHeader[\s\S]*language=/);
   assert.match(sectionPage, /<PublicHeader[\s\S]*activeHref=/);
-  assert.match(sectionPage, /<PublicQuestionWidget language=/);
+  assert.doesNotMatch(sectionPage, /PublicQuestionWidget/);
+  assert.doesNotMatch(page, /PublicQuestionWidget/);
   assert.match(sectionPage, /Official community channel/);
   assert.match(sectionPage, /https:\/\/web\.facebook\.com\/groups\/115394412003293/);
   assert.match(sectionPage, /Facebook may require visitors to sign in/);
@@ -81,11 +81,6 @@ test("defines the Burmese Catholic Community of Western Australia public website
   assert.match(homeApi, /Administrator access is required/);
   assert.match(homeApi, /home\.update/);
   assert.match(homeApi, /isSafeHref/);
-  assert.match(questionWidget, /Safe, private and not public/);
-  assert.match(questionWidget, /\/api\/inquiries/);
-  assert.match(questionWidget, /source: "quick-question"/);
-  assert.match(questionWidget, /Need a staff reply\? Use Get involved/);
-  assert.match(questionWidget, /Send privately/);
   assert.doesNotMatch(page, /Staff portal|Admin Panel|hPanel|n8n/);
   assert.doesNotMatch(page, /codex-preview|Your site is taking shape/i);
   assert.match(contactForm, /authorised AMEP provider/i);
@@ -161,7 +156,8 @@ test("defines the separate staff Admin Panel", async () => {
   assert.match(pageManager, /Homepage pathways/);
   assert.match(pageManager, /Show on home page/);
   assert.match(pageManager, /fetch\(key === "home" \? "\/api\/home"/);
-  assert.match(admin, /Production actions are locked/);
+  assert.match(admin, /Focused workspace/);
+  assert.match(admin, /admin-section-rail/);
   assert.match(admin, /New community update/);
   assert.match(admin, /Post appears on page/);
   assert.match(admin, /type="file"/);
@@ -195,7 +191,7 @@ test("defines the separate staff Admin Panel", async () => {
   assert.match(auth, /PBKDF2/);
   assert.match(auth, /HttpOnly; SameSite=Lax/);
   assert.match(usersApi, /Owner access is required/);
-  assert.match(admin, /<InquiryAlert currentUser=/);
+  assert.match(admin, /<InquiryAlert[\s\S]*currentUser=\{session\}/);
   assert.match(admin, /Enquiries/);
   assert.match(inquiryAlert, /New public questions need review/);
   assert.match(inquiryAlert, /60_000/);
@@ -205,8 +201,8 @@ test("defines the separate staff Admin Panel", async () => {
   assert.match(operations, /Assigned to/);
   assert.match(operations, /Follow up by/);
   assert.match(operations, /Follow-up overdue/);
-  assert.match(operations, /Promote to follow-up/);
-  assert.match(operations, /No reply needed/);
+  assert.doesNotMatch(operations, /Promote to follow-up/);
+  assert.doesNotMatch(operations, /QUICK TRIAGE/);
   assert.match(operations, /Inquiry CK-/);
   assert.match(inquiriesApi, /follow_up_required/);
   assert.match(inquiriesApi, /assigned_to/);

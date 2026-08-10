@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PublicHeader, type PublicLanguage } from "./PublicHeader";
-import { PublicQuestionWidget } from "./PublicQuestionWidget";
 import { MailSubscribe } from "./MailSubscribe";
 
 type CommunityEvent = {
@@ -274,8 +273,6 @@ export function EventsPage() {
           </Link>
         </div>
       </section>
-
-      <PublicQuestionWidget />
     </main>
   );
 }

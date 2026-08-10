@@ -13,7 +13,6 @@ import { sectionDefinitions, type SectionKey } from "../lib/sections";
 import { LogoMark } from "./LogoMark";
 import { PublicHeader, type PublicLanguage } from "./PublicHeader";
 import { CommunityContactForm } from "./CommunityContactForm";
-import { PublicQuestionWidget } from "./PublicQuestionWidget";
 
 function CommitteeCard({ member }: { member: CommitteeMember }) {
   return (
@@ -392,7 +391,6 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
         </Link>
         <p>Australian community action with a clear public purpose.</p>
       </footer>
-      <PublicQuestionWidget language={language} />
     </main>
   );
 }

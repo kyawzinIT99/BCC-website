@@ -2,9 +2,12 @@ import { env } from "cloudflare:workers";
 import { authenticateRequest, authRuntime } from "../../../lib/auth";
 import { sectionKeys, type SectionKey } from "../../../lib/sections";
 import {
+  localFallbackAnswer,
   localProjectAnswer,
+  needsGenerativeAi,
   projectKnowledge,
   projectKnowledgeVersion,
+  refuseOffTopic,
 } from "../../../lib/mr-kyaw-zin-knowledge";
 import {
   checkRateLimit,
@@ -28,8 +31,9 @@ type DraftContext = {
   placement?: SectionKey;
 };
 
-const instructions = `You are MR.Kyaw Zin, the private Admin assistant for the Burmese Catholic Community of Western Australia platform.
-You help authenticated staff with website questions, technical support, drafting, summarising, claim review, troubleshooting, and content organisation.
+const instructions = `You are Mr. Kyaw Zin (AI, Networking, and Cloud), the private Admin assistant for the Burmese Catholic Community of Western Australia platform.
+Staff may also contact you on WhatsApp at +66 82 567 4570 for technical support outside the chat.
+You help authenticated staff with drafting, summarising, claim review, and content organisation for the current private draft.
 Use only the verified PROJECT KNOWLEDGE below, the current private draft, or approved project files retrieved by file search.
 Treat CONFIRMED, PLANNED, NOT CONFIGURED, and UNKNOWN as different states. Never describe planned work as completed.
 If the answer is unsupported, say exactly: "I don't know from the verified project information yet." Then explain what evidence is needed.
@@ -37,7 +41,8 @@ You never publish, schedule, distribute, modify users or passwords, access Hosti
 Never invent government approval, funding, partnerships, permits, impact numbers, participant details, or consent.
 Flag claims that require evidence. Keep advice clear, practical, respectful, and suitable for an Australian community organisation.
 The workflow is draft, human review, then an authorised administrator publishes.
-Do not answer unrelated general questions; explain that your scope is the Burmese Catholic Community of Western Australia website and its technical support.
+Do not answer unrelated general questions; explain that your scope is the BCC website draft and technical support.
+Prefer short replies. Do not spend tokens on chit-chat.
 
 PROJECT KNOWLEDGE:
 ${projectKnowledge}`;
@@ -81,20 +86,23 @@ function extractText(payload: Record<string, unknown>) {
 }
 
 function setupReply(message: string, draft: DraftContext) {
+  const local = localProjectAnswer(message);
+  if (local) return local;
+
   const request = message.toLowerCase();
-  if (request.includes("summary")) {
+  if (request.includes("summary") || request.includes("summar")) {
     if (!draft.body?.trim()) {
-      return "MR.Kyaw Zin is installed in setup mode. Add the full story first; once the private AI connection is enabled, I can prepare a concise summary for human review.";
+      return "Add the full story first. OpenAI summary is only used when AI mode is enabled; FAQ answers never spend the API key.";
     }
-    return "I can see the draft story. The private chat interface is working, but AI generation is not enabled yet. Configure the server-side OpenAI key to create a summary; nothing will be published.";
+    return "I can see the draft. AI generation is not enabled yet (setup mode). Configure MR_KYAW_ZIN_AI_ENABLED and OPENAI_API_KEY for summaries. Website FAQ questions still answer locally for free.";
   }
   if (request.includes("claim")) {
-    return "Claim-check mode is ready for activation. Review names, dates, consent, impact numbers, funding, permits, partnerships, and any government references against written evidence before publishing.";
+    return "Claim-check checklist: names, dates, consent, impact numbers, funding, permits, partnerships, and government references — verify against written evidence before publishing.";
   }
-  if (request.includes("destination")) {
-    return `The current public destination is “${draft.placement || "stories"}”. Once AI is enabled, I can compare the draft with every section; a human will still choose the final destination.`;
+  if (request.includes("destination") || request.includes("placement")) {
+    return `Current public destination is “${draft.placement || "stories"}”. A human still chooses the final page.`;
   }
-  return localProjectAnswer(message);
+  return localFallbackAnswer();
 }
 
 export async function POST(request: Request) {
@@ -102,47 +110,102 @@ export async function POST(request: Request) {
   if (rejected) return rejected;
   const user = await authenticateRequest(request);
   if (!user) {
-    return Response.json({ error: "Sign in to use MR.Kyaw Zin" }, { status: 401 });
+    return Response.json({ error: "Sign in to use Mr. Kyaw Zin" }, { status: 401 });
   }
 
   try {
     const db = authRuntime().DB;
-    const key = await rateLimitKey("admin-assistant", request, String(user.id));
-    const limit = await checkRateLimit(db, {
-      key,
-      limit: 20,
+    // Overall chat limit (local + AI)
+    const chatKey = await rateLimitKey("admin-assistant", request, String(user.id));
+    const chatLimit = await checkRateLimit(db, {
+      key: chatKey,
+      limit: 40,
       windowSeconds: 60 * 60,
       blockSeconds: 15 * 60,
     });
-    if (!limit.allowed) {
+    if (!chatLimit.allowed) {
       return Response.json(
-        { error: "Assistant request limit reached. Try again later." },
+        {
+          error:
+            "Assistant limit reached (40/hour). Use FAQ chips or WhatsApp +66 82 567 4570.",
+        },
         {
           status: 429,
-          headers: noStoreHeaders({ "Retry-After": String(limit.retryAfter) }),
+          headers: noStoreHeaders({ "Retry-After": String(chatLimit.retryAfter) }),
         },
       );
     }
+
     const payload = (await request.json()) as {
       message?: string;
       draft?: unknown;
     };
-    const message = payload.message?.trim().slice(0, 2000) || "";
+    const message = payload.message?.trim().slice(0, 1200) || "";
     const draft = cleanDraft(payload.draft);
     if (!message) {
       return Response.json({ error: "A message is required" }, { status: 400 });
     }
 
+    // Always prefer local FAQ / refuse off-topic — zero OpenAI spend
+    const offTopic = refuseOffTopic(message);
+    if (offTopic) {
+      await recordAudit(db, user.id, "assistant.request", "assistant", null, {
+        mode: "local-refuse",
+      });
+      return Response.json(
+        { mode: "setup", reply: offTopic, source: "local" },
+        { headers: noStoreHeaders() },
+      );
+    }
+
+    const faq = localProjectAnswer(message);
+    if (faq) {
+      await recordAudit(db, user.id, "assistant.request", "assistant", null, {
+        mode: "local-faq",
+      });
+      return Response.json(
+        { mode: "setup", reply: faq, source: "local" },
+        { headers: noStoreHeaders() },
+      );
+    }
+
     const config = runtime();
     const enabled = config.MR_KYAW_ZIN_AI_ENABLED === "true";
-    if (!enabled || !config.OPENAI_API_KEY) {
+    const wantsAi = needsGenerativeAi(message);
+
+    // No FAQ match and not a generative draft task → still local (saves API)
+    if (!enabled || !config.OPENAI_API_KEY || !wantsAi) {
       await recordAudit(db, user.id, "assistant.request", "assistant", null, {
         mode: "setup",
       });
-      return Response.json({
-        mode: "setup",
-        reply: setupReply(message, draft),
-      }, { headers: noStoreHeaders() });
+      return Response.json(
+        {
+          mode: "setup",
+          reply: setupReply(message, draft),
+          source: "local",
+        },
+        { headers: noStoreHeaders() },
+      );
+    }
+
+    // Stricter limit for paid OpenAI calls only
+    const aiKey = await rateLimitKey("admin-assistant-openai", request, String(user.id));
+    const aiLimit = await checkRateLimit(db, {
+      key: aiKey,
+      limit: 8,
+      windowSeconds: 60 * 60,
+      blockSeconds: 30 * 60,
+    });
+    if (!aiLimit.allowed) {
+      return Response.json(
+        {
+          mode: "setup",
+          reply:
+            "OpenAI draft-help limit reached (8/hour). Website FAQ questions still work free — try the suggested chips. Or WhatsApp +66 82 567 4570.",
+          source: "local",
+        },
+        { headers: noStoreHeaders({ "Retry-After": String(aiLimit.retryAfter) }) },
+      );
     }
 
     const tools = config.OPENAI_VECTOR_STORE_ID
@@ -161,17 +224,17 @@ export async function POST(request: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: config.OPENAI_MODEL || "gpt-5.6",
+        model: config.OPENAI_MODEL || "gpt-4.1-mini",
         instructions,
         store: false,
-        max_output_tokens: 700,
+        max_output_tokens: 450,
         tools,
         input: `Staff member: ${user.displayName} (${user.role})
 Verified project knowledge version: ${projectKnowledgeVersion}
 Current private draft:
 ${JSON.stringify(draft)}
 
-Request:
+Generative request only (improve / summary / claim-check / destination):
 ${message}`,
       }),
     });
@@ -185,19 +248,23 @@ ${message}`,
     }
 
     const reply = extractText(result);
-    if (!reply) throw new Error("MR.Kyaw Zin returned an empty response");
+    if (!reply) throw new Error("Mr. Kyaw Zin returned an empty response");
     await recordAudit(db, user.id, "assistant.request", "assistant", null, {
       mode: "ready",
       knowledgeVersion: projectKnowledgeVersion,
     });
-    return Response.json({
-      mode: "ready",
-      reply,
-      knowledgeVersion: projectKnowledgeVersion,
-    }, { headers: noStoreHeaders() });
+    return Response.json(
+      {
+        mode: "ready",
+        reply,
+        knowledgeVersion: projectKnowledgeVersion,
+        source: "openai",
+      },
+      { headers: noStoreHeaders() },
+    );
   } catch {
     return Response.json(
-      { error: "MR.Kyaw Zin is temporarily unavailable" },
+      { error: "Mr. Kyaw Zin is temporarily unavailable" },
       { status: 500, headers: noStoreHeaders() },
     );
   }

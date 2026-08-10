@@ -2768,16 +2768,40 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
 }
 .assistant-identity { display: flex; align-items: center; gap: 14px; }
 .assistant-avatar {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  background: var(--wattle);
-  color: var(--ink);
+  overflow: hidden;
+  border-radius: 12px;
+  background: #0a2a1c;
+  box-shadow: 0 0 0 2px rgba(120, 220, 140, 0.28);
+}
+.assistant-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.assistant-identity h2 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -.045em;
+}
+.assistant-brand-line {
+  margin: 3px 0 0;
+  color: rgba(255, 255, 255, 0.88);
   font-size: 10px;
-  font-weight: 950;
-  box-shadow: 0 0 0 5px rgba(244,196,48,.13);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.assistant-brand-sub {
+  margin: 2px 0 0 !important;
+  color: rgba(160, 230, 170, 0.9) !important;
+  font-size: 8px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
 }
 .assistant-identity p {
   margin: 3px 0 0;
@@ -2786,11 +2810,6 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
   gap: 7px;
   color: rgba(255,255,255,.6);
   font-size: 9px;
-}
-.assistant-identity h2 {
-  margin: 0;
-  font-size: 17px;
-  letter-spacing: -.045em;
 }
 .assistant-identity p i {
   width: 6px;
@@ -2853,8 +2872,10 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
 .assistant-quick-prompts {
   padding: 8px 12px 3px;
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  overflow-x: auto;
+  max-height: 88px;
+  overflow-y: auto;
   background: white;
 }
 .assistant-quick-prompts button {
@@ -2904,38 +2925,62 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
 .assistant-composer button:disabled { opacity: .45; }
 .assistant-footnote {
   margin: 0 0 10px;
+  padding: 0 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  justify-content: center;
+  align-items: center;
   color: var(--muted);
   font-size: 8px;
   text-align: center;
 }
+.assistant-whatsapp {
+  color: var(--eucalyptus);
+  font-weight: 800;
+  text-decoration: none;
+}
+.assistant-whatsapp:hover {
+  text-decoration: underline;
+}
 .assistant-launcher {
-  width: 52px;
-  height: 52px;
-  padding: 6px;
+  width: 56px;
+  height: 56px;
+  padding: 3px;
   display: flex;
   align-items: center;
+  justify-content: center;
   border: 0;
-  border-radius: 50%;
-  background: var(--ink);
+  border-radius: 16px;
+  background: #071a12;
   color: white;
-  box-shadow: 0 12px 30px rgba(23,33,29,.24);
+  box-shadow: 0 12px 30px rgba(23,33,29,.28);
   cursor: pointer;
+  overflow: hidden;
+}
+.assistant-launcher > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 13px;
+  display: block;
 }
 .assistant-launcher > span {
-  width: 40px;
-  height: 40px;
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  background: var(--wattle);
-  color: var(--ink);
-  font-size: 10px;
-  font-weight: 950;
+  border-radius: 13px;
+  background: rgba(255,255,255,.08);
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
 }
 .assistant-widget.is-open .assistant-launcher {
   width: 46px;
   height: 46px;
-  padding: 3px;
+  padding: 2px;
+  border-radius: 50%;
 }
 .assistant-widget.is-open .assistant-launcher > span {
   width: 40px;

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import type { PublicPlacement } from "../lib/content";
+import { assistantFaqPrompts } from "../lib/mr-kyaw-zin-knowledge";
 
 export type AssistantDraft = {
   title: string;
@@ -22,12 +23,7 @@ type Props = {
   onApplySuggestion: (suggestion: Partial<AssistantDraft>) => void;
 };
 
-const quickPrompts = [
-  "Improve this draft",
-  "Create a short summary",
-  "Check public claims",
-  "Suggest a destination",
-];
+const quickPrompts = [...assistantFaqPrompts];
 
 export function MrKyawZinAssistant({ draft, onApplySuggestion }: Props) {
   const [open, setOpen] = useState(false);
@@ -39,7 +35,7 @@ export function MrKyawZinAssistant({ draft, onApplySuggestion }: Props) {
       id: 1,
       role: "assistant",
       text:
-        "Hello. I’m MR.Kyaw Zin. Ask me about this website, its current progress, content workflow, or technical support. I answer from verified project knowledge and say when something is unknown. I cannot publish or change access.",
+        "Hello. I’m Mr. Kyaw Zin — AI, Networking, and Cloud.\n\nWebsite questions use a free local FAQ (no API spend). OpenAI is only for draft help like improve/summary when enabled.\n\nTry a chip below, or WhatsApp +66 82 567 4570.",
     },
   ]);
 
@@ -108,15 +104,24 @@ export function MrKyawZinAssistant({ draft, onApplySuggestion }: Props) {
     <aside
       className={`assistant-widget ${open ? "is-open" : ""}`}
       id="assistant"
-      aria-label="MR.Kyaw Zin private Admin assistant"
+      aria-label="Mr. Kyaw Zin private Admin assistant"
     >
       {open && (
         <section className="assistant-popover" aria-labelledby="assistant-title">
           <header className="assistant-header">
             <div className="assistant-identity">
-              <span className="assistant-avatar" aria-hidden="true">MK</span>
+              <span className="assistant-avatar" aria-hidden="true">
+                <img
+                  src="/it-solutions-zone-logo.png"
+                  alt=""
+                  width={38}
+                  height={38}
+                />
+              </span>
               <div>
-                <h2 id="assistant-title">MR.Kyaw Zin</h2>
+                <h2 id="assistant-title">Mr. Kyaw Zin</h2>
+                <p className="assistant-brand-line">iT Solutions ZONE</p>
+                <p className="assistant-brand-sub">AI · Automation · Innovation</p>
                 <p>
                   <i className={mode} aria-hidden="true" />
                   {mode === "ready" ? "Private AI assistant" : "Private · Setup mode"}
@@ -126,7 +131,7 @@ export function MrKyawZinAssistant({ draft, onApplySuggestion }: Props) {
             <button
               className="assistant-close"
               type="button"
-              aria-label="Close MR.Kyaw Zin"
+              aria-label="Close Mr. Kyaw Zin"
               onClick={() => setOpen(false)}
             >
               ×
@@ -157,16 +162,19 @@ export function MrKyawZinAssistant({ draft, onApplySuggestion }: Props) {
           </div>
 
           <div className="assistant-quick-prompts">
-            {quickPrompts.slice(0, 3).map((prompt) => (
+            {quickPrompts.map((prompt) => (
               <button key={prompt} type="button" onClick={() => void sendMessage(prompt)}>
                 {prompt}
               </button>
             ))}
+            <button type="button" onClick={() => void sendMessage("Improve this draft")}>
+              Improve this draft
+            </button>
           </div>
 
           <form className="assistant-composer" onSubmit={handleSubmit}>
             <label className="sr-only" htmlFor="assistant-message">
-              Ask MR.Kyaw Zin
+              Ask Mr. Kyaw Zin
             </label>
             <textarea
               id="assistant-message"
@@ -187,6 +195,14 @@ export function MrKyawZinAssistant({ draft, onApplySuggestion }: Props) {
 
           <p className="assistant-footnote">
             Suggestions only · Human approval required
+            <a
+              className="assistant-whatsapp"
+              href="https://wa.me/66825674570"
+              target="_blank"
+              rel="noreferrer"
+            >
+              WhatsApp +66 82 567 4570
+            </a>
           </p>
         </section>
       )}
@@ -194,12 +210,21 @@ export function MrKyawZinAssistant({ draft, onApplySuggestion }: Props) {
       <button
         className="assistant-launcher"
         type="button"
-        aria-label={open ? "Close MR.Kyaw Zin" : "Open MR.Kyaw Zin"}
+        aria-label={open ? "Close Mr. Kyaw Zin" : "Open Mr. Kyaw Zin"}
         aria-expanded={open}
         aria-controls="assistant"
         onClick={() => setOpen((current) => !current)}
       >
-        <span aria-hidden="true">{open ? "×" : "MK"}</span>
+        {open ? (
+          <span aria-hidden="true">×</span>
+        ) : (
+          <img
+            src="/it-solutions-zone-logo.png"
+            alt=""
+            width={40}
+            height={40}
+          />
+        )}
       </button>
     </aside>
   );

@@ -6,10 +6,16 @@ import type { StaffUser } from "../lib/auth";
 type InquirySummary = {
   id: number;
   status: string;
-  follow_up_required: number | boolean;
+  follow_up_required: number | boolean | string;
 };
 
-export function InquiryAlert({ currentUser }: { currentUser: StaffUser }) {
+export function InquiryAlert({
+  currentUser,
+  onOpenQueue,
+}: {
+  currentUser: StaffUser;
+  onOpenQueue?: () => void;
+}) {
   const [inquiries, setInquiries] = useState<InquirySummary[]>([]);
   const [available, setAvailable] = useState(false);
 
@@ -41,7 +47,10 @@ export function InquiryAlert({ currentUser }: { currentUser: StaffUser }) {
 
   if (currentUser.role === "editor") return null;
 
-  const formal = inquiries.filter((item) => Boolean(item.follow_up_required));
+  const formal = inquiries.filter((item) => {
+    const flag = item.follow_up_required;
+    return flag === true || flag === 1 || flag === "1";
+  });
   const newCount = formal.filter((item) => item.status === "new").length;
   const activeCount = formal.filter(
     (item) => item.status === "in-progress" || item.status === "waiting",
@@ -57,9 +66,10 @@ export function InquiryAlert({ currentUser }: { currentUser: StaffUser }) {
   }
 
   return (
-    <a
+    <button
+      type="button"
       className={newCount ? "inquiry-alert has-new" : "inquiry-alert"}
-      href="#inquiries"
+      onClick={() => onOpenQueue?.()}
       aria-label={`${newCount} new enquiries and ${activeCount} in progress. Open follow-up queue.`}
     >
       <span className="inquiry-alert-count">{newCount.toString().padStart(2, "0")}</span>
@@ -68,6 +78,6 @@ export function InquiryAlert({ currentUser }: { currentUser: StaffUser }) {
         <small>{activeCount} in progress · Open the administrator follow-up queue</small>
       </span>
       <b aria-hidden="true">View queue →</b>
-    </a>
+    </button>
   );
 }

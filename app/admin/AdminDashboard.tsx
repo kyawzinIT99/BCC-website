@@ -26,6 +26,38 @@ import { SubscribersManager } from "./SubscribersManager";
 const channels = ["Website", "Facebook", "Telegram", "Email"];
 const MAX_GALLERY_PHOTOS = 4;
 
+type AdminSection =
+  | "overview"
+  | "composer"
+  | "content"
+  | "distribution"
+  | "team"
+  | "security"
+  | "pages"
+  | "events"
+  | "subscribers"
+  | "inquiries";
+
+type AdminNavItem = {
+  id: AdminSection;
+  label: string;
+  number: string;
+  adminOnly?: boolean;
+};
+
+const adminNavItems: AdminNavItem[] = [
+  { id: "overview", label: "Overview", number: "01" },
+  { id: "composer", label: "Create post", number: "02" },
+  { id: "content", label: "Content library", number: "03" },
+  { id: "distribution", label: "Distribution", number: "04" },
+  { id: "team", label: "Team access", number: "05" },
+  { id: "security", label: "Security & records", number: "06" },
+  { id: "pages", label: "Public pages", number: "07" },
+  { id: "events", label: "Events", number: "08" },
+  { id: "subscribers", label: "Subscribers", number: "09", adminOnly: true },
+  { id: "inquiries", label: "Enquiries", number: "10", adminOnly: true },
+];
+
 type ComposerMedia = {
   id: number;
   name: string;
@@ -63,6 +95,7 @@ export function AdminDashboard() {
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [previewing, setPreviewing] = useState(false);
+  const [activeSection, setActiveSection] = useState<AdminSection>("overview");
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -72,6 +105,19 @@ export function AdminDashboard() {
       })
       .catch(() => setSession(null));
   }, []);
+
+  useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, "") as AdminSection;
+    if (adminNavItems.some((item) => item.id === hash)) {
+      setActiveSection(hash);
+    }
+  }, []);
+
+  function openSection(section: AdminSection) {
+    setActiveSection(section);
+    window.history.replaceState(null, "", `#${section}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   useEffect(() => {
     if (!session) return;
@@ -249,7 +295,7 @@ export function AdminDashboard() {
       })),
       mediaAlt: post.mediaAlt || "",
     });
-    document.querySelector("#composer")?.scrollIntoView({ behavior: "smooth" });
+    openSection("composer");
   }
 
   async function publishPost(post: CommunityPost) {
@@ -306,6 +352,18 @@ export function AdminDashboard() {
     return <AdminLogin onSignedIn={setSession} />;
   }
 
+  const visibleNav = adminNavItems.filter(
+    (item) => !item.adminOnly || session.role !== "editor",
+  );
+  const sectionIndex = Math.max(
+    0,
+    visibleNav.findIndex((item) => item.id === activeSection),
+  );
+  const currentNav = visibleNav[sectionIndex] || visibleNav[0];
+  const previousSection = visibleNav[sectionIndex - 1];
+  const nextSection = visibleNav[sectionIndex + 1];
+  const sectionTitle = currentNav?.label || "Overview";
+
   return (
     <main className="admin-shell">
       <aside className="admin-sidebar">
@@ -313,27 +371,23 @@ export function AdminDashboard() {
           <LogoMark />
           <span>BURMESE CATHOLIC COMMUNITY WA</span>
         </Link>
-        <nav>
-          <a className="active" href="#overview"><span>01</span> Overview</a>
-          <a href="#composer"><span>02</span> Create post</a>
-          <a href="#content"><span>03</span> Content library</a>
-          <a href="#distribution"><span>04</span> Distribution</a>
-          <a href="#team"><span>05</span> Team access</a>
-          <a href="#security"><span>06</span> Security & records</a>
-          <a href="#pages"><span>07</span> Public pages</a>
-          <a href="#events"><span>08</span> Events</a>
-          {session.role !== "editor" && (
-            <>
-              <a href="#subscribers"><span>09</span> Subscribers</a>
-              <a href="#inquiries"><span>10</span> Enquiries</a>
-            </>
-          )}
+        <nav aria-label="Admin sections">
+          {visibleNav.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={activeSection === item.id ? "active" : undefined}
+              onClick={() => openSection(item.id)}
+            >
+              <span>{item.number}</span> {item.label}
+            </button>
+          ))}
         </nav>
         <div className="sidebar-note">
           <span className="status-dot" />
           <p>
-            Preview workspace
-            <small>Production actions are locked.</small>
+            Focused workspace
+            <small>One section at a time · use arrows to move</small>
           </p>
         </div>
       </aside>
@@ -341,8 +395,8 @@ export function AdminDashboard() {
       <section className="admin-main">
         <header className="admin-topbar">
           <div>
-            <p>STAFF WORKSPACE / OVERVIEW</p>
-            <h1>Good morning, editor.</h1>
+            <p>STAFF WORKSPACE / {sectionTitle.toUpperCase()}</p>
+            <h1>{sectionTitle}</h1>
           </div>
           <div className="editor-chip">
             <span>{session.displayName.slice(0, 2).toUpperCase()}</span>
@@ -351,35 +405,57 @@ export function AdminDashboard() {
           </div>
         </header>
 
-        <InquiryAlert currentUser={session} />
+        {notice ? <div className="admin-notice" role="status">{notice}</div> : null}
 
-        <section className="admin-overview" id="overview">
-          <article>
-            <span>Published</span>
-            <strong>{counts.published.toString().padStart(2, "0")}</strong>
-            <p>Live on the website</p>
-          </article>
-          <article>
-            <span>In review</span>
-            <strong>{counts.review.toString().padStart(2, "0")}</strong>
-            <p>Waiting for approval</p>
-          </article>
-          <article>
-            <span>Drafts</span>
-            <strong>{counts.drafts.toString().padStart(2, "0")}</strong>
-            <p>Private to staff</p>
-          </article>
-          <article className="distribution-card">
-            <span>Distribution health</span>
-            <strong>Website only</strong>
-            <p>Website publishing only</p>
-          </article>
-        </section>
+        <div className="admin-stage" aria-live="polite">
+        {activeSection === "overview" ? (
+          <div className="admin-stage-panel">
+            <InquiryAlert
+              currentUser={session}
+              onOpenQueue={() => openSection("inquiries")}
+            />
+            <section className="admin-overview" id="overview">
+              <article>
+                <span>Published</span>
+                <strong>{counts.published.toString().padStart(2, "0")}</strong>
+                <p>Live on the website</p>
+              </article>
+              <article>
+                <span>In review</span>
+                <strong>{counts.review.toString().padStart(2, "0")}</strong>
+                <p>Waiting for approval</p>
+              </article>
+              <article>
+                <span>Drafts</span>
+                <strong>{counts.drafts.toString().padStart(2, "0")}</strong>
+                <p>Private to staff</p>
+              </article>
+              <article className="distribution-card">
+                <span>Distribution health</span>
+                <strong>Website only</strong>
+                <p>Website publishing only</p>
+              </article>
+            </section>
+            <div className="admin-quick-jumps">
+              <button type="button" onClick={() => openSection("composer")}>
+                Create post →
+              </button>
+              {session.role !== "editor" ? (
+                <button type="button" onClick={() => openSection("inquiries")}>
+                  Open enquiries →
+                </button>
+              ) : null}
+              <button type="button" onClick={() => openSection("events")}>
+                Manage events →
+              </button>
+            </div>
+          </div>
+        ) : null}
 
-        {notice && <div className="admin-notice" role="status">{notice}</div>}
-
+        {activeSection === "composer" ? (
+        <div className="admin-stage-panel admin-stage-composer">
         <div className="admin-grid">
-          <form className="composer-panel" id="composer" onSubmit={handleSubmit}>
+          <form className="composer-panel is-focus" id="composer" onSubmit={handleSubmit}>
             <div className="panel-heading">
               <div>
                 <p>CREATE</p>
@@ -578,48 +654,34 @@ export function AdminDashboard() {
             </div>
           </form>
 
-          <aside className="activity-panel" id="distribution">
-            <div className="panel-heading">
-              <div>
-                <p>INTEGRATION STATUS</p>
-                <h2>Website first</h2>
-              </div>
-            </div>
-            <div className="integration-list">
-              {[
-                ["WB", "Website", "Available"],
-                ["N8", "n8n AI automation", "Connected"],
-                ["IQ", "Inquiry alerts", "Connected"],
-                ["FB", "Facebook / Telegram channels", "Ready for channel credentials"],
-              ].map(([code, label, status]) => (
-                <article key={label}>
-                  <span>{code}</span>
-                  <p>{label}<small>{status}</small></p>
-                  <i className={status === "Available" || status === "Connected" ? "healthy" : ""} />
-                </article>
-              ))}
-            </div>
-            <div className="automation-explainer">
-              <p>AI AUTOMATION</p>
-              <h3>Dynamic site linked to n8n.</h3>
-              <p>
-                After administrator approval, published posts and community inquiries
-                are handed to n8n for AI automation. Draft and review content stays private.
-              </p>
-              <div className="mini-flow">
-                <span>Draft</span><b>→</b><span>Review</span><b>→</b><span>Website</span><b>→</b><span>n8n AI</span>
-              </div>
-            </div>
+          <aside className="activity-panel composer-assistant-slot">
+            <MrKyawZinAssistant
+              draft={{
+                title: composer.title,
+                excerpt: composer.excerpt,
+                body: composer.body,
+                placement: composer.placement,
+              }}
+              onApplySuggestion={(suggestion: Partial<AssistantDraft>) =>
+                setComposer((current) => ({ ...current, ...suggestion }))
+              }
+            />
           </aside>
         </div>
+        </div>
+        ) : null}
 
-        <section className="content-table" id="content">
+        {activeSection === "content" ? (
+        <div className="admin-stage-panel">
+        <section className="content-table is-focus" id="content">
           <div className="panel-heading">
             <div>
               <p>CONTENT LIBRARY</p>
               <h2>Recent updates</h2>
             </div>
-            <button type="button">Filter: all</button>
+            <button type="button" onClick={() => openSection("composer")}>
+              New post →
+            </button>
           </div>
           <div className="table-head">
             <span>Content</span><span>Status</span><span>Destination</span><span>Action</span>
@@ -661,24 +723,117 @@ export function AdminDashboard() {
             </article>
           ))}
         </section>
+        </div>
+        ) : null}
 
-        <MrKyawZinAssistant
-          draft={{
-            title: composer.title,
-            excerpt: composer.excerpt,
-            body: composer.body,
-            placement: composer.placement,
-          }}
-          onApplySuggestion={(suggestion: Partial<AssistantDraft>) =>
-            setComposer((current) => ({ ...current, ...suggestion }))
-          }
-        />
+        {activeSection === "distribution" ? (
+        <div className="admin-stage-panel">
+          <aside className="activity-panel is-focus" id="distribution">
+            <div className="panel-heading">
+              <div>
+                <p>INTEGRATION STATUS</p>
+                <h2>Website first</h2>
+              </div>
+            </div>
+            <div className="integration-list">
+              {[
+                ["WB", "Website", "Available"],
+                ["N8", "n8n AI automation", "Connected"],
+                ["IQ", "Inquiry alerts", "Connected"],
+                ["FB", "Facebook / Telegram channels", "Ready for channel credentials"],
+              ].map(([code, label, status]) => (
+                <article key={label}>
+                  <span>{code}</span>
+                  <p>{label}<small>{status}</small></p>
+                  <i className={status === "Available" || status === "Connected" ? "healthy" : ""} />
+                </article>
+              ))}
+            </div>
+            <div className="automation-explainer">
+              <p>AI AUTOMATION</p>
+              <h3>Dynamic site linked to n8n.</h3>
+              <p>
+                After administrator approval, published posts and community inquiries
+                are handed to n8n for AI automation. Draft and review content stays private.
+              </p>
+              <div className="mini-flow">
+                <span>Draft</span><b>→</b><span>Review</span><b>→</b><span>Website</span><b>→</b><span>n8n AI</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+        ) : null}
 
-        <TeamAccess currentUser={session} />
-        <PageManager currentUser={session} />
-        <EventsManager />
-        <SubscribersManager currentUser={session} />
-        <AdminOperations currentUser={session} />
+        {activeSection === "team" ? (
+          <div className="admin-stage-panel"><TeamAccess currentUser={session} /></div>
+        ) : null}
+        {activeSection === "security" ? (
+          <div className="admin-stage-panel">
+            <AdminOperations currentUser={session} panel="security" />
+          </div>
+        ) : null}
+        {activeSection === "pages" ? (
+          <div className="admin-stage-panel"><PageManager currentUser={session} /></div>
+        ) : null}
+        {activeSection === "events" ? (
+          <div className="admin-stage-panel"><EventsManager /></div>
+        ) : null}
+        {activeSection === "subscribers" && session.role !== "editor" ? (
+          <div className="admin-stage-panel">
+            <SubscribersManager currentUser={session} />
+          </div>
+        ) : null}
+        {activeSection === "inquiries" && session.role !== "editor" ? (
+          <div className="admin-stage-panel">
+            <AdminOperations currentUser={session} panel="inquiries" />
+          </div>
+        ) : null}
+        </div>
+
+        <nav className="admin-section-rail" aria-label="Move between admin sections">
+          <button
+            type="button"
+            className="admin-rail-arrow"
+            disabled={!previousSection}
+            onClick={() => previousSection && openSection(previousSection.id)}
+            aria-label={
+              previousSection ? `Previous: ${previousSection.label}` : "No previous section"
+            }
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 6 9 12l6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>{previousSection ? previousSection.label : "Start"}</span>
+          </button>
+          <div className="admin-rail-status">
+            <div className="admin-rail-dots" aria-hidden="true">
+              {visibleNav.map((item, index) => (
+                <i
+                  key={item.id}
+                  className={index === sectionIndex ? "is-active" : undefined}
+                />
+              ))}
+            </div>
+            <strong>{sectionTitle}</strong>
+            <span>
+              {(sectionIndex + 1).toString().padStart(2, "0")} of{" "}
+              {visibleNav.length.toString().padStart(2, "0")}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="admin-rail-arrow is-next"
+            disabled={!nextSection}
+            onClick={() => nextSection && openSection(nextSection.id)}
+            aria-label={nextSection ? `Next: ${nextSection.label}` : "No next section"}
+          >
+            <span>{nextSection ? nextSection.label : "End"}</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </nav>
+
         {previewing && (
           <div className="preview-overlay" role="dialog" aria-modal="true">
             <article>

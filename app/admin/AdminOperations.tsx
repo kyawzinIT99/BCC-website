@@ -25,6 +25,8 @@ type Inquiry = {
   assigned_to: string;
   follow_up_by: string | null;
   status: string;
+  closed_by?: string;
+  closed_at?: string | null;
   created_at: string;
 };
 
@@ -160,8 +162,12 @@ export function AdminOperations({
       setNotice("Unable to update the inquiry.");
       return false;
     }
+    const body = await response.json().catch(() => ({}));
+    const serverInquiry = (body?.inquiry || {}) as Partial<Inquiry>;
     setInquiries((current) =>
-      current.map((item) => item.id === id ? { ...item, ...localPatch } : item),
+      current.map((item) =>
+        item.id === id ? { ...item, ...localPatch, ...serverInquiry } : item,
+      ),
     );
     setNotice(successNotice);
     return true;
@@ -207,6 +213,12 @@ export function AdminOperations({
                     )}
                     <p>{item.message}</p>
                     <time dateTime={item.created_at}>{item.created_at}</time>
+                    {item.status === "closed" && item.closed_by ? (
+                      <small>
+                        Closed by {item.closed_by}
+                        {item.closed_at ? ` · ${item.closed_at.slice(0, 10)}` : ""}
+                      </small>
+                    ) : null}
                     {overdue && <b className="inquiry-overdue">Follow-up overdue</b>}
                   </div>
                   <div className="inquiry-controls">

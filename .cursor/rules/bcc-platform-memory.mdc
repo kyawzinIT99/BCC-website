@@ -16,10 +16,11 @@ alwaysApply: true
 - Hostinger API connected via `HOSTINGER_API_TOKEN` in `.dev.vars` (never commit). Base: `https://developers.hostinger.com`.
 
 ## Recently built n8n workflows (already integrated)
-- `BCC Inquiry Alert` (`U1gvYq4WnZvxyMIm`) → `/webhook/bcc-inquiry-alert`
+- `BCC Inquiry Alert` (`U1gvYq4WnZvxyMIm`) → `/webhook/bcc-inquiry-alert` (created + status changed + closed; closed includes staff `handledBy` / `closedBy`)
 - `BCC Publish Distribution` (`czx6JcuNWP2unBRv`) → `/webhook/bcc-publish-distribution`
 - `BCC Subscribe Alert` (`JBDK9TqPnYJCkAMn`) → `/webhook/bcc-subscribe-alert` (new/reactivated subscribers → Telegram/Gmail staff alert)
 - `BCC Event Mail` (`bS9NmXubTc9y9Kc0`) → `/webhook/bcc-event-mail` (published upcoming event → Gmail to active subscribers + staff Telegram summary)
+- Staff Telegram alerts use HTML parse mode with a shared layout: `BCC · …` headline, bold name, escaped user text (safer than Markdown for names/emails).
 - Website env in `.dev.vars`: `CRM_ALERTS_ENABLED`, `N8N_INQUIRY_ALERT_WEBHOOK`, `N8N_PUBLISH_WEBHOOK`, `N8N_SUBSCRIBE_ALERT_WEBHOOK`, `N8N_EVENT_MAIL_WEBHOOK`, shared `N8N_INQUIRY_WEBHOOK_SECRET` (never commit).
 
 ## Mail subscribe → Admin → n8n → event emails
@@ -29,8 +30,12 @@ alwaysApply: true
 - Publishing an **upcoming** event calls `N8N_EVENT_MAIL_WEBHOOK` with event details + active subscriber emails for Gmail delivery in n8n.
 - Draft events never trigger mail. Re-saving an already-published event does not re-send.
 
+## Enquiry close alerts + customer report
+- Inquiry PATCH status changes call the same inquiry webhook (`community.inquiry.closed` / `community.inquiry.status_changed`) with signed-in staff `displayName` as `handledBy`.
+- Closing sets `closed_by` / `closed_at` on `public_inquiries`; reopening clears them.
+- Admin **Reports** (owner/admin): `/api/reports/customers` combines enquiries + subscribers with filters; Excel export (`.xlsx`) uses separate sheets **Enquiries** and **Subscribers**; optional PDF export keeps the same two sections on separate pages.
+
 ## Pending owner inputs
-- Telegram bot chat id: set `CRM_TELEGRAM_CHAT_ID` (and optional `CRM_ALERT_EMAIL`) so staff alerts actually deliver.
 - Hostinger Pro domain purchase/attach + mailbox setup when ready.
 - Decide website deploy target: new Linux VPS vs Docker services on existing KVM 2.
 

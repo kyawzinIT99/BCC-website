@@ -22,6 +22,7 @@ import { InquiryAlert } from "./InquiryAlert";
 import { PageManager } from "./PageManager";
 import { EventsManager } from "./EventsManager";
 import { SubscribersManager } from "./SubscribersManager";
+import { CustomersReport } from "./CustomersReport";
 
 const channels = ["Website", "Facebook", "Telegram", "Email"];
 const MAX_GALLERY_PHOTOS = 4;
@@ -36,7 +37,8 @@ type AdminSection =
   | "pages"
   | "events"
   | "subscribers"
-  | "inquiries";
+  | "inquiries"
+  | "reports";
 
 type AdminNavItem = {
   id: AdminSection;
@@ -56,6 +58,7 @@ const adminNavItems: AdminNavItem[] = [
   { id: "events", label: "Events", number: "08" },
   { id: "subscribers", label: "Subscribers", number: "09", adminOnly: true },
   { id: "inquiries", label: "Enquiries", number: "10", adminOnly: true },
+  { id: "reports", label: "Reports", number: "11", adminOnly: true },
 ];
 
 type ComposerMedia = {
@@ -786,6 +789,11 @@ export function AdminDashboard() {
         {activeSection === "inquiries" && session.role !== "editor" ? (
           <div className="admin-stage-panel">
             <AdminOperations currentUser={session} panel="inquiries" />
+          </div>
+        ) : null}
+        {activeSection === "reports" && session.role !== "editor" ? (
+          <div className="admin-stage-panel">
+            <CustomersReport currentUser={session} />
           </div>
         ) : null}
         </div>

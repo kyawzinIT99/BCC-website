@@ -23,6 +23,8 @@ async function ensureSchema(db: D1Database) {
     assigned_to TEXT NOT NULL DEFAULT '',
     follow_up_by TEXT,
     status TEXT NOT NULL DEFAULT 'new',
+    closed_by TEXT NOT NULL DEFAULT '',
+    closed_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   )`).run();
   await db
@@ -37,6 +39,8 @@ async function ensureSchema(db: D1Database) {
     "ALTER TABLE public_inquiries ADD COLUMN follow_up_required INTEGER NOT NULL DEFAULT 1",
     "ALTER TABLE public_inquiries ADD COLUMN assigned_to TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE public_inquiries ADD COLUMN follow_up_by TEXT",
+    "ALTER TABLE public_inquiries ADD COLUMN closed_by TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE public_inquiries ADD COLUMN closed_at TEXT",
   ]) {
     try {
       await db.prepare(statement).run();
@@ -61,7 +65,8 @@ export async function GET(request: Request) {
   await ensureSchema(db);
   const result = await db
     .prepare(`SELECT id, source, kind, name, email, organisation, location, message,
-      consent, follow_up_required, assigned_to, follow_up_by, status, created_at
+      consent, follow_up_required, assigned_to, follow_up_by, status,
+      closed_by, closed_at, created_at
       FROM public_inquiries ORDER BY created_at DESC LIMIT 100`)
     .all();
   return Response.json({ inquiries: result.results }, { headers: noStoreHeaders() });
@@ -221,9 +226,39 @@ export async function PATCH(request: Request) {
   }
   const db = authRuntime().DB;
   await ensureSchema(db);
+  const existing = await db
+    .prepare(
+      `SELECT id, source, kind, name, email, organisation, location, message,
+        assigned_to, follow_up_by, status, closed_by, closed_at, created_at
+       FROM public_inquiries WHERE id = ?`,
+    )
+    .bind(id)
+    .first();
+  if (!existing) {
+    return Response.json({ error: "Inquiry not found" }, { status: 404 });
+  }
+
+  const previousStatus = String(existing.status || "new");
+  let nextStatus = previousStatus;
+  let closedBy = String(existing.closed_by || "");
+  let closedAt = (existing.closed_at as string | null) || null;
+
   if (hasStatus) {
-    await db.prepare("UPDATE public_inquiries SET status = ? WHERE id = ?")
-      .bind(payload.status, id)
+    nextStatus = payload.status || previousStatus;
+    if (nextStatus === "closed" && previousStatus !== "closed") {
+      closedBy = user.displayName;
+      closedAt = new Date().toISOString();
+    } else if (nextStatus !== "closed" && previousStatus === "closed") {
+      closedBy = "";
+      closedAt = null;
+    }
+    await db
+      .prepare(
+        `UPDATE public_inquiries
+         SET status = ?, closed_by = ?, closed_at = ?
+         WHERE id = ?`,
+      )
+      .bind(nextStatus, closedBy, closedAt, id)
       .run();
   }
   if (hasFollowUp) {
@@ -231,13 +266,22 @@ export async function PATCH(request: Request) {
       `UPDATE public_inquiries
        SET follow_up_required = ?,
            status = CASE WHEN ? = 1 AND status = 'closed' THEN 'new' ELSE status END,
+           closed_by = CASE WHEN ? = 1 AND status = 'closed' THEN '' ELSE closed_by END,
+           closed_at = CASE WHEN ? = 1 AND status = 'closed' THEN NULL ELSE closed_at END,
            follow_up_by = CASE
              WHEN ? = 1 AND follow_up_by IS NULL THEN date('now', '+2 days')
              ELSE follow_up_by
            END
        WHERE id = ?`,
     )
-      .bind(payload.followUpRequired ? 1 : 0, payload.followUpRequired ? 1 : 0, payload.followUpRequired ? 1 : 0, id)
+      .bind(
+        payload.followUpRequired ? 1 : 0,
+        payload.followUpRequired ? 1 : 0,
+        payload.followUpRequired ? 1 : 0,
+        payload.followUpRequired ? 1 : 0,
+        payload.followUpRequired ? 1 : 0,
+        id,
+      )
       .run();
   }
   if (hasAssignee) {
@@ -250,6 +294,7 @@ export async function PATCH(request: Request) {
       .bind(payload.followUpBy || null, id)
       .run();
   }
+
   const auditAction = hasFollowUp
     ? "inquiry.follow-up"
     : hasAssignee
@@ -259,9 +304,67 @@ export async function PATCH(request: Request) {
         : "inquiry.status";
   await recordAudit(db, user.id, auditAction, "public_inquiry", id, {
     status: payload.status,
+    previousStatus,
     followUpRequired: payload.followUpRequired,
     assignedTo: payload.assignedTo,
     followUpBy: payload.followUpBy,
+    handledBy: user.displayName,
   });
-  return Response.json({ ok: true }, { headers: noStoreHeaders() });
+
+  const updated = await db
+    .prepare(
+      `SELECT id, source, kind, name, email, organisation, location, message,
+        consent, follow_up_required, assigned_to, follow_up_by, status,
+        closed_by, closed_at, created_at
+       FROM public_inquiries WHERE id = ?`,
+    )
+    .bind(id)
+    .first();
+
+  const finalStatus = String(updated?.status || nextStatus);
+  if (finalStatus !== previousStatus) {
+    const event =
+      finalStatus === "closed"
+        ? "community.inquiry.closed"
+        : "community.inquiry.status_changed";
+    const notification = await notifyInquiryAutomation({
+      event,
+      reference: `CK-${id}`,
+      previousStatus,
+      status: finalStatus,
+      handledBy: user.displayName,
+      handledByRole: user.role,
+      assignedTo: String(updated?.assigned_to || ""),
+      closedBy: String(updated?.closed_by || ""),
+      closedAt: (updated?.closed_at as string | null) || null,
+      source: updated?.source,
+      kind: updated?.kind,
+      name: updated?.name,
+      email: updated?.email,
+      organisation: updated?.organisation,
+      location: updated?.location,
+      message: updated?.message,
+      updatedAt: new Date().toISOString(),
+    });
+    if (notification === "failed") {
+      await recordAudit(db, user.id, "inquiry.webhook-failed", "public_inquiry", id, {
+        event,
+        status: finalStatus,
+      });
+    } else if (notification === "delivered") {
+      await recordAudit(
+        db,
+        user.id,
+        "inquiry.webhook-delivered",
+        "public_inquiry",
+        id,
+        { event, status: finalStatus, automation: "n8n" },
+      );
+    }
+  }
+
+  return Response.json(
+    { ok: true, inquiry: updated },
+    { headers: noStoreHeaders() },
+  );
 }

@@ -10,10 +10,10 @@ production controls that still depend on the selected hosting environment.
 - Sessions are random, stored only as hashes, expire after eight hours, and use
   HttpOnly, SameSite, and Secure cookies when served over HTTPS.
 - New staff accounts must change their temporary password.
-- Login attempts are throttled in D1 and successful logins clear the counter.
+- Login attempts are throttled in MySQL and successful logins clear the counter.
 - Browser mutations require the request Origin to match the application origin.
 - Protected API results use `Cache-Control: no-store`.
-- The Worker adds CSP, anti-framing, MIME sniffing, referrer, permissions,
+- Next.js adds CSP, anti-framing, MIME sniffing, referrer, permissions,
   cross-origin, and HTTPS transport headers.
 - Uploads are limited to 15 MB, use an explicit format allowlist, reject SVG,
   verify file signatures, and receive random object keys.
@@ -31,11 +31,11 @@ public runtime, and the development server must never be exposed publicly.
 
 ## Required before production
 
-- Choose and verify the Hostinger or Cloudflare deployment architecture.
+- Verify the Hostinger Cloud Startup Node.js and MySQL deployment.
 - Store bootstrap and AI credentials in managed runtime secrets.
 - Configure MFA through an approved identity provider.
-- Apply D1 migrations and verify rollback in staging.
-- Configure encrypted database exports and R2 replication.
+- Apply the MySQL schema and verify rollback in staging.
+- Configure encrypted MySQL and media-object backups.
 - Perform a restore drill and record recovery time and recovery point results.
 - Configure uptime, error-rate, storage, and authentication-abuse alerts.
 - Review privacy, retention, consent, accessibility, and charity statements with

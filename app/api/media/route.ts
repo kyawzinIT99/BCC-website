@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { applicationRuntime } from "../../lib/hostinger-runtime";
 import { authenticateRequest } from "../../lib/auth";
 import { mutationRejected, noStoreHeaders, recordAudit } from "../../lib/security";
 
@@ -9,7 +9,7 @@ type RuntimeEnv = {
 };
 
 function runtime() {
-  return env as unknown as RuntimeEnv;
+  return applicationRuntime() as unknown as RuntimeEnv;
 }
 
 const allowedTypes = new Map([

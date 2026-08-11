@@ -68,8 +68,8 @@ export function CustomersReport({ currentUser }: { currentUser: StaffUser }) {
   useEffect(() => {
     if (!canManage) return;
     let active = true;
-    setLoading(true);
     const timer = window.setTimeout(() => {
+      setLoading(true);
       fetch(`/api/reports/customers${query ? `?${query}` : ""}`)
         .then((response) => (response.ok ? response.json() : Promise.reject()))
         .then((payload) => {

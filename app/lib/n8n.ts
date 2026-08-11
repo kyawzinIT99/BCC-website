@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { applicationRuntime } from "./hostinger-runtime";
 
 type N8nRuntime = {
   CRM_ALERTS_ENABLED?: string;
@@ -13,7 +13,7 @@ type N8nRuntime = {
 };
 
 function runtime() {
-  return env as unknown as N8nRuntime;
+  return applicationRuntime() as unknown as N8nRuntime;
 }
 
 function secretHeaders() {

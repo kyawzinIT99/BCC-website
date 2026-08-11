@@ -1,5 +1,5 @@
-import { env } from "cloudflare:workers";
 import { authenticateRequest, authRuntime } from "../../../lib/auth";
+import { applicationRuntime } from "../../../lib/hostinger-runtime";
 import { sectionKeys, type SectionKey } from "../../../lib/sections";
 import {
   localFallbackAnswer,
@@ -48,7 +48,7 @@ PROJECT KNOWLEDGE:
 ${projectKnowledge}`;
 
 function runtime() {
-  return env as unknown as RuntimeEnv;
+  return applicationRuntime() as unknown as RuntimeEnv;
 }
 
 function cleanDraft(value: unknown): DraftContext {

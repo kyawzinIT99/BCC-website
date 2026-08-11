@@ -12,10 +12,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
+COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
-COPY --from=build /app/app ./app
-COPY --from=build /app/worker ./worker
-COPY --from=build /app/vite.config.ts /app/next.config.ts ./
 EXPOSE 3000
-CMD ["node", "node_modules/vinext/dist/cli.js", "start"]
+CMD ["npm", "start"]

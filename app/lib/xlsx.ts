@@ -157,7 +157,7 @@ function zipStore(files: Array<{ name: string; data: Uint8Array }>) {
 }
 
 function safeSheetName(name: string, used: Set<string>) {
-  let base = name.replace(/[\\/?*\[\]:]/g, " ").trim().slice(0, 31) || "Sheet";
+  const base = name.replace(/[\\/?*\[\]:]/g, " ").trim().slice(0, 31) || "Sheet";
   let candidate = base;
   let i = 2;
   while (used.has(candidate.toLowerCase())) {

@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { applicationRuntime } from "../../lib/hostinger-runtime";
 import { authenticateRequest } from "../../lib/auth";
 import { notifyEventMailAutomation } from "../../lib/n8n";
 import { mutationRejected, noStoreHeaders, recordAudit } from "../../lib/security";
@@ -8,7 +8,7 @@ type RuntimeEnv = {
 };
 
 function runtime() {
-  return env as unknown as RuntimeEnv;
+  return applicationRuntime() as unknown as RuntimeEnv;
 }
 
 async function ensureSchema(db: D1Database) {

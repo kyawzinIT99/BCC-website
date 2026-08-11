@@ -216,8 +216,6 @@ export function PublicSite() {
     "/story-cultural.png",
     "/story-learning.png",
   ];
-  const storyCategories = ["Faith & Prayer", "Culture & Heritage", "Learning & Growth"];
-
   return (
     <main className="public-site civic-public-site v2-redesign">
       {/* ── Announcement Bar ────────────────────────────────── */}
@@ -307,7 +305,7 @@ export function PublicSite() {
       {/* ── Mission Statement ────────────────────────────────── */}
       <section className="v2-mission" aria-label="Mission statement">
         <blockquote>
-          <span className="v2-mission-mark" aria-hidden="true">"</span>
+          <span className="v2-mission-mark" aria-hidden="true">&ldquo;</span>
           To serve and not to be served — building bridges of faith, culture and belonging across generations.
         </blockquote>
       </section>

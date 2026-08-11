@@ -112,7 +112,8 @@ export function AdminDashboard() {
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, "") as AdminSection;
     if (adminNavItems.some((item) => item.id === hash)) {
-      setActiveSection(hash);
+      const timer = window.setTimeout(() => setActiveSection(hash), 0);
+      return () => window.clearTimeout(timer);
     }
   }, []);
 

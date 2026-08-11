@@ -1,40 +1,44 @@
-# Dependencies
-node_modules/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Build output
-.next/
-out/
-dist/
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
+# testing
+/coverage
 
-# Environment files
-.env
-.env.local
-.env.production
-.env*.local
+# next.js
+/.next/
+/.vinext/
+/out/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS files
+# misc
 .DS_Store
-Thumbs.db
+*.pem
 
-# Debug logs
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
-# PCC photos source (large files)
-PCC/
-PCC\ /
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
 
-# Local scratch / source imports
-tmp/
+# vercel
+.vercel
+
+# typescript
+next-env.d.ts
+/dist/
+/.wrangler/
+/outputs/
+/work/
+/.tools/

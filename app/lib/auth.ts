@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { applicationRuntime } from "./hostinger-runtime";
 
 export const staffRoles = ["owner", "administrator", "editor"] as const;
 export type StaffRole = (typeof staffRoles)[number];
@@ -33,7 +33,7 @@ const sessionCookie = "common_kind_session";
 const passwordIterations = 210_000;
 
 export function authRuntime() {
-  return env as unknown as AuthRuntime;
+  return applicationRuntime() as unknown as AuthRuntime;
 }
 
 function bytesToHex(bytes: Uint8Array) {
@@ -62,7 +62,7 @@ async function derivePassword(password: string, salt: Uint8Array, iterations: nu
     ["deriveBits"],
   );
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt, iterations },
+    { name: "PBKDF2", hash: "SHA-256", salt: Uint8Array.from(salt).buffer, iterations },
     key,
     256,
   );

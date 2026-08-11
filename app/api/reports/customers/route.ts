@@ -173,7 +173,7 @@ export async function GET(request: Request) {
         rows: subscribers,
       },
     ]);
-    return new Response(bytes, {
+    return new Response(Uint8Array.from(bytes).buffer, {
       headers: {
         ...noStoreHeaders(),
         "Content-Type":
@@ -215,7 +215,7 @@ export async function GET(request: Request) {
         },
       ],
     });
-    return new Response(bytes, {
+    return new Response(Uint8Array.from(bytes).buffer, {
       headers: {
         ...noStoreHeaders(),
         "Content-Type": "application/pdf",

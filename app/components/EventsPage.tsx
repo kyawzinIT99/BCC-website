@@ -69,7 +69,7 @@ export function EventsPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const timer = window.setTimeout(() => setMounted(true), 0);
     // Fetch events from admin API, fall back to seed data
     fetch("/api/events")
       .then((r) => (r.ok ? r.json() : Promise.reject()))
@@ -79,6 +79,7 @@ export function EventsPage() {
         }
       })
       .catch(() => {/* keep seed events */ });
+    return () => window.clearTimeout(timer);
   }, []);
 
   // Defer date-dependent filtering to client to avoid SSR hydration mismatch

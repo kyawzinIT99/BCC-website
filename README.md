@@ -119,10 +119,17 @@ npm run db:generate
 ```text
 BOOTSTRAP_ADMIN_EMAIL=
 BOOTSTRAP_ADMIN_PASSWORD=
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=
+DB_PASSWORD=
+DB_NAME=
 ADMIN_WRITE_TOKEN=
 N8N_PUBLISH_WEBHOOK=
 N8N_INQUIRY_ALERT_WEBHOOK=
 N8N_INQUIRY_WEBHOOK_SECRET=
+N8N_SUBSCRIBE_ALERT_WEBHOOK=
+N8N_EVENT_MAIL_WEBHOOK=
 CRM_ALERTS_ENABLED=false
 N8N_BASE_URL=
 N8N_API_KEY=
@@ -234,20 +241,22 @@ After design approval:
 
 ### Hostinger
 
-Production uses a three-part Hostinger layout:
+Production uses a two-part Hostinger layout:
 
-1. **Pro plan** — domain, SSL, and organisation mailboxes.
-2. **Existing VPS** — the already-running n8n automation host (`n8n-al8a...hstgr.cloud`). Keep CRM inquiry alerts and publish automation there.
-3. **New Linux VPS** — website essentials: Node/vinext app, SQL database, media volume, HTTPS reverse proxy, encrypted backups, and uptime monitoring. Do not move n8n onto this VPS unless the existing automation host is retired later.
+1. **Cloud Startup** — the standard Next.js website, Hostinger MySQL database,
+   domain, managed SSL, and organisation mailboxes.
+2. **Existing VPS** — the already-running n8n automation host
+   (`n8n-al8a...hstgr.cloud`). Keep the four BCC webhook workflows there.
 
-The vinext build currently targets a Cloudflare Worker-compatible local runtime. Before the new Linux VPS cutover, certify the Docker Compose path against that VPS image, wire production secrets, and point the domain to the new VPS while mail and SSL remain under Hostinger Pro/DNS.
+The website deploys from GitHub as a Hostinger Node.js Web App. Production
+database credentials and the shared n8n webhook secret belong only in hPanel
+environment variables and must never be committed to Git.
 
 ### Linux container
 
-The repository includes an initial container definition, but the current vinext
-build targets the Cloudflare Worker runtime and has not been certified as a
-Hostinger production container. Final database, media, proxy, SSL, backup, and
-secret wiring must be matched to the purchased Hostinger plan before launch.
+The primary production path is Hostinger's managed Node.js Web App service.
+Containers remain an optional disaster-recovery path, not the live website
+architecture.
 
 ```bash
 docker compose up --build

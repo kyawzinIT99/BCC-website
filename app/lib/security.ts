@@ -7,7 +7,27 @@ type RateLimitOptions = {
 
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  return !origin || origin === new URL(request.url).origin;
+  if (!origin) return true;
+
+  let suppliedOrigin: string;
+  try {
+    suppliedOrigin = new URL(origin).origin;
+  } catch {
+    return false;
+  }
+
+  if (suppliedOrigin === new URL(request.url).origin) return true;
+
+  // TLS is terminated before requests reach Node on managed Hostinger apps, so
+  // request.url may contain a private upstream origin. Keep CSRF validation
+  // strict by accepting only the explicitly configured public application URL.
+  const configuredOrigin = process.env.APP_ORIGIN?.trim();
+  if (!configuredOrigin) return false;
+  try {
+    return suppliedOrigin === new URL(configuredOrigin).origin;
+  } catch {
+    return false;
+  }
 }
 
 export function mutationRejected(request: Request) {

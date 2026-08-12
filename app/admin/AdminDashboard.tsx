@@ -310,7 +310,13 @@ export function AdminDashboard() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...post,
+          id: post.id,
+          title: post.title,
+          excerpt: post.excerpt,
+          body: post.body,
+          category: post.category,
+          placement: post.placement,
+          channels: post.channels,
           mediaId: post.mediaId ?? post.gallery?.[0]?.id ?? null,
           mediaIds:
             post.mediaIds?.length
@@ -321,7 +327,13 @@ export function AdminDashboard() {
         }),
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Unable to publish");
+      if (!response.ok) {
+        throw new Error(
+          payload.detail
+            ? `${payload.error || "Unable to publish"} (${payload.detail})`
+            : payload.error || "Unable to publish",
+        );
+      }
       setPosts((current) =>
         current.map((item) => item.id === post.id ? payload.post : item),
       );

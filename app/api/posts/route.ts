@@ -220,20 +220,37 @@ async function loadGalleries(
   return galleries;
 }
 
+function parseChannels(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item) => typeof item === "string").slice(0, 8);
+  }
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed)
+        ? parsed.filter((item) => typeof item === "string").slice(0, 8)
+        : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function normalize(row: Record<string, unknown>, gallery: GalleryItem[] = []) {
   const cover = gallery[0];
   const mediaId = cover?.id ?? (row.media_id ? Number(row.media_id) : null);
   return {
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
-    excerpt: row.excerpt,
-    body: row.body,
-    category: row.category,
-    placement: row.placement || "stories",
-    status: row.status,
-    channels: JSON.parse(String(row.channels || "[]")),
-    author: row.author,
+    id: Number(row.id),
+    slug: String(row.slug || ""),
+    title: String(row.title || ""),
+    excerpt: String(row.excerpt || ""),
+    body: String(row.body || ""),
+    category: String(row.category || "Field notes"),
+    placement: String(row.placement || "stories"),
+    status: String(row.status || "draft"),
+    channels: parseChannels(row.channels),
+    author: String(row.author || "Community editor"),
     mediaId,
     mediaIds: gallery.map((item) => item.id),
     mediaUrl: mediaId ? `/api/media?id=${mediaId}` : null,
@@ -496,6 +513,7 @@ export async function PATCH(request: Request) {
     await ensureSchema(db);
     const existing = await db.prepare("SELECT * FROM posts WHERE id = ?").bind(id).first();
     if (!existing) return Response.json({ error: "Post not found" }, { status: 404 });
+    const previousStatus = String((existing as Record<string, unknown>).status || "draft");
     const [existingEnriched] = await enrichPosts(db, [
       existing as Record<string, unknown>,
     ]);
@@ -503,7 +521,13 @@ export async function PATCH(request: Request) {
       .prepare(
         "INSERT INTO post_revisions (post_id, snapshot, changed_by) VALUES (?, ?, ?)",
       )
-      .bind(id, JSON.stringify(existingEnriched), staffUser.id)
+      .bind(
+        id,
+        JSON.stringify(existingEnriched, (_key, value) =>
+          typeof value === "bigint" ? Number(value) : value,
+        ),
+        staffUser.id,
+      )
       .run();
     const placement = sectionKeys.includes(payload.placement as SectionKey)
       ? payload.placement!
@@ -513,17 +537,21 @@ export async function PATCH(request: Request) {
       : ["Website"];
     const mediaIds = parseMediaIds(payload);
     const mediaId = mediaIds[0] ?? null;
-    const row = await db
+    // Compute publish timestamp in JS — MySQL CASE + bound params is unreliable here.
+    let publishedAt: string | null = (existing as Record<string, unknown>).published_at
+      ? String((existing as Record<string, unknown>).published_at)
+      : null;
+    if (status === "published" && previousStatus !== "published") {
+      publishedAt = new Date().toISOString();
+    } else if (status !== "published") {
+      publishedAt = null;
+    }
+    await db
       .prepare(`UPDATE posts SET
         title = ?, excerpt = ?, body = ?, category = ?, placement = ?,
-        status = ?, channels = ?, media_id = ?,
-        published_at = CASE
-          WHEN ? = 'published' AND published_at IS NULL THEN CURRENT_TIMESTAMP
-          WHEN ? != 'published' THEN NULL
-          ELSE published_at
-        END,
+        status = ?, channels = ?, media_id = ?, published_at = ?,
         updated_at = CURRENT_TIMESTAMP
-        WHERE id = ? RETURNING *`)
+        WHERE id = ?`)
       .bind(
         title,
         payload.excerpt?.trim() || "",
@@ -533,13 +561,11 @@ export async function PATCH(request: Request) {
         status,
         JSON.stringify(channels),
         mediaId,
-        status,
-        status,
+        publishedAt,
         id,
       )
-      .first();
+      .run();
     await syncPostMedia(db, id, mediaIds);
-    const previousStatus = String((existing as Record<string, unknown>).status);
     await recordAudit(db, staffUser.id, `post.${status}`, "post", id, {
       previousStatus,
       placement,
@@ -547,8 +573,11 @@ export async function PATCH(request: Request) {
     const storedPost = await db
       .prepare(`SELECT p.*, m.content_type AS media_content_type, m.alt_text AS media_alt_text
         FROM posts p LEFT JOIN media m ON m.id = p.media_id WHERE p.id = ?`)
-      .bind(Number((row as Record<string, unknown>).id))
+      .bind(id)
       .first();
+    if (!storedPost) {
+      return Response.json({ error: "Post not found after update" }, { status: 404 });
+    }
     const [post] = await enrichPosts(db, [
       storedPost as Record<string, unknown>,
     ]);
@@ -576,7 +605,11 @@ export async function PATCH(request: Request) {
     }
 
     return Response.json({ post }, { headers: noStoreHeaders() });
-  } catch {
-    return Response.json({ error: "Unable to update post" }, { status: 500 });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "unknown error";
+    return Response.json(
+      { error: "Unable to update post", detail },
+      { status: 500 },
+    );
   }
 }

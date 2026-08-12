@@ -170,9 +170,15 @@ class MySqlStatement implements D1PreparedStatement {
     let rows: Record<string, unknown>[] = [];
     if (returning) {
       const table = query.match(/^\s*(?:INSERT\s+INTO|UPDATE)\s+`?([a-z_]+)`?/i)?.[1];
-      const id = result.insertId || (/\bWHERE\s+id\s*=\s*\?/i.test(query) ? Number(this.values.at(-1)) : 0);
-      if (table && id) {
-        const [selected] = await this.pool.query<RowDataPacket[]>(`SELECT * FROM \`${table}\` WHERE id = ? LIMIT 1`, [id]);
+      let id = Number(result.insertId || 0);
+      if (!id && /\bWHERE\s+id\s*=\s*\?/i.test(query)) {
+        id = Number(this.values.at(-1) || 0);
+      }
+      if (table && Number.isSafeInteger(id) && id > 0) {
+        const [selected] = await this.pool.query<RowDataPacket[]>(
+          `SELECT * FROM \`${table}\` WHERE id = ? LIMIT 1`,
+          [id],
+        );
         rows = selected as Record<string, unknown>[];
       }
     }

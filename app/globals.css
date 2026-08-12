@@ -2992,14 +2992,14 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
 }
 .assistant-identity { display: flex; align-items: center; gap: 14px; }
 .assistant-avatar {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   overflow: hidden;
   border-radius: 12px;
-  background: #0a2a1c;
-  box-shadow: 0 0 0 2px rgba(120, 220, 140, 0.28);
+  background: #04150c;
+  box-shadow: 0 0 0 1px rgba(180, 255, 90, 0.28), 0 8px 18px rgba(0, 0, 0, 0.28);
 }
 .assistant-avatar img {
   width: 100%;
@@ -3170,15 +3170,15 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
 .assistant-launcher {
   width: 56px;
   height: 56px;
-  padding: 3px;
+  padding: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 0;
   border-radius: 16px;
-  background: #071a12;
+  background: #04150c;
   color: white;
-  box-shadow: 0 12px 30px rgba(23,33,29,.28);
+  box-shadow: 0 12px 30px rgba(4, 21, 12, 0.42), 0 0 0 1px rgba(180, 255, 90, 0.22);
   cursor: pointer;
   overflow: hidden;
 }

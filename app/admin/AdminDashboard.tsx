@@ -196,7 +196,7 @@ export function AdminDashboard() {
         ].slice(0, MAX_GALLERY_PHOTOS),
       }));
       setNotice(
-        `${payload.media.filename} added (${Math.min(composer.media.length + 1, MAX_GALLERY_PHOTOS)} of ${MAX_GALLERY_PHOTOS}).`,
+        `${payload.media.filename} added (${Math.min(composer.media.length + 1, MAX_GALLERY_PHOTOS)} of ${MAX_GALLERY_PHOTOS}). Publish the story to show it on the website.`,
       );
     } catch (error) {
       if (localPreview) URL.revokeObjectURL(localPreview);

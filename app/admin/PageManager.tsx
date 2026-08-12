@@ -48,6 +48,7 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
   const [home, setHome] = useState<HomePageSettings>(defaultHomePage);
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingHero, setUploadingHero] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -122,6 +123,35 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
     }));
   }
 
+  async function uploadHeroImage(file: File | undefined) {
+    if (!file) return;
+    setUploadingHero(true);
+    setNotice("");
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      form.set("altText", home.heroImageAlt || file.name);
+      const response = await fetch("/api/media", { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Unable to upload hero image");
+      const mediaId = Number(payload.media.id);
+      setHome((current) => ({
+        ...current,
+        heroImageUrl: `/api/media?id=${mediaId}`,
+        heroImageAlt:
+          current.heroImageAlt.trim() ||
+          String(payload.media.alt_text || file.name).slice(0, 240),
+      }));
+      setNotice(
+        "Hero image uploaded. Click Save page settings to show it on the public home page.",
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to upload hero image");
+    } finally {
+      setUploadingHero(false);
+    }
+  }
+
   return (
     <section className="operations-panel" id="pages">
       <div className="panel-heading">
@@ -168,7 +198,26 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
               <label className="wide">
                 Hero image URL
                 <input maxLength={500} required value={home.heroImageUrl} onChange={(event) => setHome({ ...home, heroImageUrl: event.target.value })} />
-                <small className="field-guidance">Use an uploaded internal image path or an approved HTTPS image.</small>
+                <small className="field-guidance">
+                  Prefer Upload hero image below (sets `/api/media?id=…`). Default bundled path also works after deploy.
+                </small>
+              </label>
+              <label className="wide">
+                Upload hero image
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  disabled={uploadingHero || saving}
+                  onChange={(event) => {
+                    void uploadHeroImage(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+                <small className="field-guidance">
+                  {uploadingHero
+                    ? "Uploading…"
+                    : "Replaces the hero photo on the public website after you save."}
+                </small>
               </label>
               <label className="wide">
                 Hero image description

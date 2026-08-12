@@ -9,6 +9,11 @@ import {
   type CommitteeMember,
 } from "../lib/bcc-profile";
 import type { CommunityPost } from "../lib/content";
+import {
+  defaultPageMedia,
+  supportsPageMedia,
+  type PageMedia,
+} from "../lib/page-media";
 import { sectionDefinitions, type SectionKey } from "../lib/sections";
 import { LogoMark } from "./LogoMark";
 import { PublicHeader, type PublicLanguage } from "./PublicHeader";
@@ -29,6 +34,9 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [pageCopy, setPageCopy] = useState(section);
   const [aboutProfile, setAboutProfile] = useState<AboutProfile>(() => cloneAboutProfile());
+  const [pageMedia, setPageMedia] = useState<PageMedia | undefined>(() =>
+    supportsPageMedia(sectionKey) ? defaultPageMedia[sectionKey] : undefined,
+  );
   const [language, setLanguage] = useState<PublicLanguage>("en");
   const visibleFeatures = sectionKey === "our-work"
     ? pageCopy.features.map((feature) =>
@@ -37,6 +45,8 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
           : feature,
       )
     : pageCopy.features;
+  const aboutMedia = pageMedia || defaultPageMedia.about;
+  const workMedia = pageMedia || defaultPageMedia["our-work"];
 
   useEffect(() => {
     if (sectionKey !== "stories") {
@@ -60,11 +70,15 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
           if (sectionKey === "about" && payload.page.about) {
             setAboutProfile(payload.page.about);
           }
+          if (payload.page.media && supportsPageMedia(sectionKey)) {
+            setPageMedia(payload.page.media);
+          }
         }
       })
       .catch(() => {
         setPageCopy(section);
         if (sectionKey === "about") setAboutProfile(cloneAboutProfile(defaultAboutProfile));
+        if (supportsPageMedia(sectionKey)) setPageMedia(defaultPageMedia[sectionKey]);
       });
   }, [section, sectionKey]);
 
@@ -83,15 +97,15 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
               {/* vinext's image optimizer does not serve this static WebP reliably. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/about-community-australia.webp"
-                alt="A diverse group preparing welcome and learning materials together in an Australian community setting."
+                src={aboutMedia.heroImageUrl}
+                alt={aboutMedia.heroImageAlt}
                 width={1536}
                 height={1024}
                 loading="eager"
                 fetchPriority="high"
                 decoding="async"
               />
-              <figcaption>Original concept image · Australian community collaboration</figcaption>
+              <figcaption>Community photo · Burmese Catholic Community of WA</figcaption>
             </figure>
             <div className="section-about-copy">
               <p className="section-about-kicker">
@@ -112,8 +126,8 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
             <figure className="section-work-photo">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/our-work-community.jpg"
-                alt="Young Burmese Catholic community members walking together outdoors in Western Australia."
+                src={workMedia.heroImageUrl}
+                alt={workMedia.heroImageAlt}
                 loading="eager"
                 fetchPriority="high"
               />
@@ -188,8 +202,8 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
               <figure>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={["/community-story-faith.jpg", "/community-story-culture.jpg", "/community-story-care.jpg"][index]}
-                  alt={["Community members gathered at church", "Community members celebrating Burmese culture", "Community members meeting and planning together"][index]}
+                  src={workMedia.featureImages[index]?.url || defaultPageMedia["our-work"].featureImages[index].url}
+                  alt={workMedia.featureImages[index]?.alt || defaultPageMedia["our-work"].featureImages[index].alt}
                   loading="lazy"
                 />
               </figure>

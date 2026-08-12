@@ -31,10 +31,19 @@ test("defines the Burmese Catholic Community of Western Australia public website
   assert.match(sectionPage, /Official community channel/);
   assert.match(sectionPage, /https:\/\/web\.facebook\.com\/groups\/115394412003293/);
   assert.match(sectionPage, /Facebook may require visitors to sign in/);
-  assert.match(sectionPage, /about-community-australia\.webp/);
-  assert.match(sectionPage, /Original concept image/);
+  assert.match(sectionPage, /aboutMedia\.heroImageUrl/);
+  assert.match(sectionPage, /Community photo · Burmese Catholic Community of WA/);
   assert.match(sectionPage, /section-page-hero.*has-work-photo/);
-  assert.match(sectionPage, /our-work-community\.jpg/);
+  assert.match(sectionPage, /workMedia\.heroImageUrl/);
+  assert.match(sectionPage, /workMedia\.featureImages/);
+  assert.match(
+    await readFile(new URL("../app/lib/page-media.ts", import.meta.url), "utf8"),
+    /about-community-australia\.webp/,
+  );
+  assert.match(
+    await readFile(new URL("../app/lib/page-media.ts", import.meta.url), "utf8"),
+    /our-work-community\.jpg/,
+  );
   assert.match(sectionPage, /work-updates-route/);
   assert.match(sectionPage, /Our Work explains what we do\. News &amp; Stories shows what is happening now\./);
   assert.match(sectionPage, /Payment details appear only after organisation approval\./);

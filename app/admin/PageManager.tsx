@@ -17,6 +17,11 @@ import {
   type SectionFeature,
   type SectionKey,
 } from "../lib/sections";
+import {
+  defaultPageMedia,
+  supportsPageMedia,
+  type PageMedia,
+} from "../lib/page-media";
 import { AboutProfileEditor } from "./AboutProfileEditor";
 
 type PageFields = {
@@ -26,6 +31,7 @@ type PageFields = {
   statement: string;
   features: [SectionFeature, SectionFeature, SectionFeature];
   about: AboutProfile;
+  media?: PageMedia;
 };
 
 type PageSelection = "home" | SectionKey;
@@ -39,6 +45,7 @@ function defaults(key: SectionKey): PageFields {
     statement: page.statement,
     features: page.features.map((feature) => ({ ...feature })) as PageFields["features"],
     about: cloneAboutProfile(defaultAboutProfile),
+    media: supportsPageMedia(key) ? { ...defaultPageMedia[key], featureImages: defaultPageMedia[key].featureImages.map((item) => ({ ...item })) as PageMedia["featureImages"] } : undefined,
   };
 }
 
@@ -49,6 +56,7 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingHero, setUploadingHero] = useState(false);
+  const [uploadingPageImage, setUploadingPageImage] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -60,10 +68,13 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
       .then((payload) => {
         if (key === "home" && payload.home) setHome(payload.home);
         if (key !== "home" && payload.page) {
+          const fallback = defaults(key);
           setFields({
+            ...fallback,
             ...payload.page,
-            features: payload.page.features || defaults(key).features,
-            about: payload.page.about || cloneAboutProfile(defaultAboutProfile),
+            features: payload.page.features || fallback.features,
+            about: payload.page.about || fallback.about,
+            media: payload.page.media || fallback.media,
           });
         }
       })
@@ -98,16 +109,19 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
       if (!response.ok) throw new Error(payload.error || "Unable to save page");
       if (key === "home" && payload.home) setHome(payload.home);
       if (key !== "home" && payload.page) {
+        const fallback = defaults(key);
         setFields({
+          ...fallback,
           ...payload.page,
-          features: payload.page.features || defaults(key).features,
-          about: payload.page.about || cloneAboutProfile(defaultAboutProfile),
+          features: payload.page.features || fallback.features,
+          about: payload.page.about || fallback.about,
+          media: payload.page.media || fallback.media,
         });
       }
       setNotice(
         key === "home"
           ? "Home page public copy and pathways updated."
-          : `${sectionDefinitions[key].label} public copy updated.`,
+          : `${sectionDefinitions[key].label} public copy and photos updated.`,
       );
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to save page");
@@ -149,6 +163,56 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
       setNotice(error instanceof Error ? error.message : "Unable to upload hero image");
     } finally {
       setUploadingHero(false);
+    }
+  }
+
+  async function uploadPageImage(
+    file: File | undefined,
+    target: "hero" | 0 | 1 | 2,
+  ) {
+    if (!file || !fields.media || !supportsPageMedia(key)) return;
+    const uploadKey = target === "hero" ? "hero" : `feature-${target}`;
+    setUploadingPageImage(uploadKey);
+    setNotice("");
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      form.set(
+        "altText",
+        target === "hero"
+          ? fields.media.heroImageAlt || file.name
+          : fields.media.featureImages[target].alt || file.name,
+      );
+      const response = await fetch("/api/media", { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Unable to upload image");
+      const mediaId = Number(payload.media.id);
+      const url = `/api/media?id=${mediaId}`;
+      const alt = String(payload.media.alt_text || file.name).slice(0, 240);
+      setFields((current) => {
+        if (!current.media) return current;
+        if (target === "hero") {
+          return {
+            ...current,
+            media: {
+              ...current.media,
+              heroImageUrl: url,
+              heroImageAlt: current.media.heroImageAlt.trim() || alt,
+            },
+          };
+        }
+        const featureImages = current.media.featureImages.map((item, index) =>
+          index === target
+            ? { url, alt: item.alt.trim() || alt }
+            : item,
+        ) as PageMedia["featureImages"];
+        return { ...current, media: { ...current.media, featureImages } };
+      });
+      setNotice("Photo uploaded. Click Update public page to show it on the website.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to upload image");
+    } finally {
+      setUploadingPageImage(null);
     }
   }
 
@@ -324,6 +388,119 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
                 Public statement
                 <input maxLength={220} required value={fields.statement} onChange={(event) => setFields({ ...fields, statement: event.target.value })} />
               </label>
+              {supportsPageMedia(key) && fields.media && (
+                <div className="home-pathway-editor wide">
+                  <div className="home-pathway-editor-heading">
+                    <strong>Page photos</strong>
+                    <small>Upload replaces the public {sectionDefinitions[key].label} photos after you save</small>
+                  </div>
+                  <fieldset>
+                    <legend>Main photo</legend>
+                    <label className="wide">
+                      Image URL
+                      <input
+                        maxLength={500}
+                        required
+                        value={fields.media.heroImageUrl}
+                        onChange={(event) =>
+                          setFields({
+                            ...fields,
+                            media: { ...fields.media!, heroImageUrl: event.target.value },
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="wide">
+                      Upload photo
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        disabled={Boolean(uploadingPageImage) || saving}
+                        onChange={(event) => {
+                          void uploadPageImage(event.target.files?.[0], "hero");
+                          event.target.value = "";
+                        }}
+                      />
+                      <small className="field-guidance">
+                        {uploadingPageImage === "hero" ? "Uploading…" : "Shows on the public page hero."}
+                      </small>
+                    </label>
+                    <label className="wide">
+                      Photo description
+                      <input
+                        maxLength={240}
+                        required
+                        value={fields.media.heroImageAlt}
+                        onChange={(event) =>
+                          setFields({
+                            ...fields,
+                            media: { ...fields.media!, heroImageAlt: event.target.value },
+                          })
+                        }
+                      />
+                    </label>
+                    {fields.media.heroImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={fields.media.heroImageUrl}
+                        alt=""
+                        width={320}
+                        height={200}
+                        style={{ maxWidth: "100%", height: "auto", borderRadius: 8 }}
+                      />
+                    ) : null}
+                  </fieldset>
+                  {key === "our-work" &&
+                    fields.media.featureImages.map((image, index) => (
+                      <fieldset key={`feature-photo-${index}`}>
+                        <legend>{`Feature photo ${String(index + 1).padStart(2, "0")}`}</legend>
+                        <label className="wide">
+                          Image URL
+                          <input
+                            maxLength={500}
+                            value={image.url}
+                            onChange={(event) => {
+                              const featureImages = fields.media!.featureImages.map((item, itemIndex) =>
+                                itemIndex === index ? { ...item, url: event.target.value } : item,
+                              ) as PageMedia["featureImages"];
+                              setFields({ ...fields, media: { ...fields.media!, featureImages } });
+                            }}
+                          />
+                        </label>
+                        <label className="wide">
+                          Upload photo
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            disabled={Boolean(uploadingPageImage) || saving}
+                            onChange={(event) => {
+                              void uploadPageImage(event.target.files?.[0], index as 0 | 1 | 2);
+                              event.target.value = "";
+                            }}
+                          />
+                          <small className="field-guidance">
+                            {uploadingPageImage === `feature-${index}`
+                              ? "Uploading…"
+                              : `Photo for feature card ${fields.features[index]?.title || index + 1}.`}
+                          </small>
+                        </label>
+                        <label className="wide">
+                          Photo description
+                          <input
+                            maxLength={240}
+                            value={image.alt}
+                            onChange={(event) => {
+                              const featureImages = fields.media!.featureImages.map((item, itemIndex) =>
+                                itemIndex === index ? { ...item, alt: event.target.value } : item,
+                              ) as PageMedia["featureImages"];
+                              setFields({ ...fields, media: { ...fields.media!, featureImages } });
+                            }}
+                          />
+                        </label>
+                      </fieldset>
+                    ))}
+                </div>
+              )}
               <div className="home-pathway-editor wide">
                 <div className="home-pathway-editor-heading">
                   <strong>Page feature cards</strong>

@@ -703,6 +703,19 @@ export function AdminDashboard() {
               <button className="button-review" type="submit" disabled={saving}>
                 {saving ? "Saving…" : editingId ? "Save for review →" : "Send for review →"}
               </button>
+              {editingId && session.role !== "editor" ? (
+                <button
+                  type="button"
+                  className="button-danger-text"
+                  disabled={saving}
+                  onClick={() => {
+                    const current = posts.find((post) => post.id === editingId);
+                    if (current) void deletePost(current);
+                  }}
+                >
+                  Delete post
+                </button>
+              ) : null}
             </div>
           </form>
 

@@ -117,8 +117,8 @@ function pageResponse(key: SectionKey, page: Record<string, unknown> | null) {
   if (!page) {
     if (!supportsPageContent(key)) return null;
     return {
-      key,
       ...sectionDefinitions[key],
+      key,
       features: sectionDefinitions[key].features,
       content: key === "giving"
         ? { giving: defaultGivingContent }

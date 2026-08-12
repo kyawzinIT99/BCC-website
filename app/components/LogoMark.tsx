@@ -4,6 +4,8 @@ type LogoMarkProps = {
   className?: string;
 };
 
+const logoSrc = "/_next/static/brand/bccwa-logo.jpg";
+
 export function LogoMark({ className = "" }: LogoMarkProps) {
   return (
     <span
@@ -11,7 +13,7 @@ export function LogoMark({ className = "" }: LogoMarkProps) {
       aria-hidden="true"
     >
       <Image
-        src="/bccwa-logo.jpg"
+        src={logoSrc}
         alt=""
         width={720}
         height={405}

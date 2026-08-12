@@ -24,8 +24,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description,
     icons: {
-      icon: "/favicon.png",
-      shortcut: "/favicon.png",
+      icon: "/_next/static/brand/favicon.png",
+      shortcut: "/_next/static/brand/favicon.png",
     },
     openGraph: {
       title,

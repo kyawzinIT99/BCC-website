@@ -174,7 +174,7 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
       {sectionKey === "giving" && giving.showAmounts ? (
         <section className="giving-totals" aria-labelledby="giving-totals-title">
           <div className="giving-totals-intro">
-            <p className="eyebrow">Published figures</p>
+            <p className="eyebrow">Published figures · Australian Dollars (AUD)</p>
             <h2 id="giving-totals-title">Donation amount and yearly total</h2>
             <p>{giving.note}</p>
             <small>{giving.updatedLabel}</small>

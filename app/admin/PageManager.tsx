@@ -566,7 +566,7 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
                 <div className="home-pathway-editor wide" id="giving-totals-editor">
                   <div className="home-pathway-editor-heading">
                     <strong>Donation amount and total</strong>
-                    <small>These figures appear on the public Giving page</small>
+                    <small>These figures appear on the public Giving page. Use AUD for Australian dollars (e.g. AUD 500).</small>
                   </div>
                   <label className="pathway-visibility">
                     <input
@@ -590,6 +590,7 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
                     <input
                       maxLength={40}
                       required
+                      placeholder="e.g. AUD 500"
                       value={fields.content.giving.amountValue}
                       onChange={(event) => updateGiving({ amountValue: event.target.value })}
                     />
@@ -608,6 +609,7 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
                     <input
                       maxLength={40}
                       required
+                      placeholder="e.g. AUD 2,500"
                       value={fields.content.giving.totalValue}
                       onChange={(event) => updateGiving({ totalValue: event.target.value })}
                     />

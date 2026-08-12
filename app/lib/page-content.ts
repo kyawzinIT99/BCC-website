@@ -34,9 +34,9 @@ export type PageStructuredContent = {
 
 export const defaultGivingContent: GivingContent = {
   amountLabel: "Current appeal",
-  amountValue: "$0",
+  amountValue: "AUD 0",
   totalLabel: "Total received this year",
-  totalValue: "$0",
+  totalValue: "AUD 0",
   showAmounts: true,
   note:
     "These figures are published by authorised administrators for community transparency. They are not a live payment system.",

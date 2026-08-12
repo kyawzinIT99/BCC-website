@@ -613,3 +613,54 @@ export async function PATCH(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  const rejected = mutationRejected(request);
+  if (rejected) return rejected;
+  const staffUser = await authenticateRequest(request);
+  if (!staffUser) {
+    return Response.json({ error: "Authorized staff access is required" }, { status: 401 });
+  }
+  if (staffUser.role === "editor") {
+    return Response.json(
+      { error: "Administrator or owner access is required to delete posts" },
+      { status: 403 },
+    );
+  }
+
+  try {
+    const url = new URL(request.url);
+    const idFromQuery = Number(url.searchParams.get("id"));
+    let id = idFromQuery;
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      const payload = (await request.json().catch(() => ({}))) as { id?: number };
+      id = Number(payload.id);
+    }
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      return Response.json({ error: "Valid post id is required" }, { status: 400 });
+    }
+
+    const db = runtime().DB;
+    await ensureSchema(db);
+    const existing = await db.prepare("SELECT id, title, status FROM posts WHERE id = ?").bind(id).first();
+    if (!existing) {
+      return Response.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    await db.prepare("DELETE FROM post_media WHERE post_id = ?").bind(id).run();
+    await db.prepare("DELETE FROM post_revisions WHERE post_id = ?").bind(id).run();
+    await db.prepare("DELETE FROM posts WHERE id = ?").bind(id).run();
+    await recordAudit(db, staffUser.id, "post.delete", "post", id, {
+      title: String((existing as Record<string, unknown>).title || ""),
+      previousStatus: String((existing as Record<string, unknown>).status || ""),
+    });
+
+    return Response.json({ deleted: true, id }, { headers: noStoreHeaders() });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "unknown error";
+    return Response.json(
+      { error: "Unable to delete post", detail },
+      { status: 500 },
+    );
+  }
+}

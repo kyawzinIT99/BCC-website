@@ -2426,7 +2426,12 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
   font-weight: 800;
   cursor: pointer;
 }
-.row-actions button:last-child { background: var(--lime); }
+.row-actions button.button-publish { background: var(--lime); }
+.row-actions button.button-danger-text {
+  background: #fff5f3;
+  border-color: #e7c4bc;
+  color: #8a2f22;
+}
 
 .operations-panel {
   margin-top: 18px;

@@ -172,6 +172,10 @@ test("defines the separate staff Admin Panel", async () => {
   assert.match(mediaApi, /SELECT object_key, filename, content_type FROM media WHERE id/);
   assert.match(postsApi, /post_media/);
   assert.match(postsApi, /MAX_GALLERY_MEDIA/);
+  assert.match(postsApi, /export async function DELETE/);
+  assert.match(postsApi, /post\.delete/);
+  assert.match(admin, /deletePost/);
+  assert.match(admin, />Delete</);
   assert.match(mediaApi, /X-Content-Type-Options/);
   assert.match(login, /Secure sign in/);
   assert.match(team, /Hostinger hPanel is separate/);

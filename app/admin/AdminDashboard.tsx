@@ -345,6 +345,42 @@ export function AdminDashboard() {
     }
   }
 
+  async function deletePost(post: CommunityPost) {
+    if (session?.role === "editor") {
+      setNotice("Only Administrators and Owners can delete posts.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Delete “${post.title}”? This removes it from the website and content library.`,
+    );
+    if (!confirmed) return;
+
+    setSaving(true);
+    setNotice("");
+    try {
+      const response = await fetch(`/api/posts?id=${post.id}`, { method: "DELETE" });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          payload.detail
+            ? `${payload.error || "Unable to delete post"} (${payload.detail})`
+            : payload.error || "Unable to delete post",
+        );
+      }
+      setPosts((current) => current.filter((item) => item.id !== post.id));
+      if (editingId === post.id) {
+        revokeComposerPreviews(composer.media);
+        setComposer(emptyComposer);
+        setEditingId(null);
+      }
+      setNotice(`Deleted “${post.title}”.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to delete post");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     void savePost("review");
@@ -731,8 +767,23 @@ export function AdminDashboard() {
               <div className="row-actions">
                 <button type="button" onClick={() => editPost(post)}>Edit</button>
                 {post.status === "review" && session.role !== "editor" && (
-                  <button type="button" disabled={saving} onClick={() => void publishPost(post)}>
+                  <button
+                    type="button"
+                    className="button-publish"
+                    disabled={saving}
+                    onClick={() => void publishPost(post)}
+                  >
                     Publish
+                  </button>
+                )}
+                {session.role !== "editor" && (
+                  <button
+                    type="button"
+                    className="button-danger-text"
+                    disabled={saving}
+                    onClick={() => void deletePost(post)}
+                  >
+                    Delete
                   </button>
                 )}
               </div>

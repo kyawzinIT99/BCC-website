@@ -4,7 +4,7 @@ type LogoMarkProps = {
   className?: string;
 };
 
-const logoSrc = "/_next/static/brand/bccwa-logo.jpg";
+const logoSrc = "/logo.jpg";
 
 export function LogoMark({ className = "" }: LogoMarkProps) {
   return (

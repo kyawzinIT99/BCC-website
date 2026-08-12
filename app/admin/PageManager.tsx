@@ -369,30 +369,13 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
                   <small>Changes saved here update the public About page.</small>
                 </div>
               )}
-              {key === "about" && (
-                <AboutProfileEditor profile={fields.about} onChange={updateAbout} />
-              )}
-              <label>
-                Eyebrow
-                <input maxLength={80} required value={fields.eyebrow} onChange={(event) => setFields({ ...fields, eyebrow: event.target.value })} />
-              </label>
-              <label className="wide">
-                Headline
-                <input maxLength={160} required value={fields.title} onChange={(event) => setFields({ ...fields, title: event.target.value })} />
-              </label>
-              <label className="wide">
-                Summary
-                <textarea rows={3} maxLength={600} required value={fields.summary} onChange={(event) => setFields({ ...fields, summary: event.target.value })} />
-              </label>
-              <label className="wide">
-                Public statement
-                <input maxLength={220} required value={fields.statement} onChange={(event) => setFields({ ...fields, statement: event.target.value })} />
-              </label>
               {supportsPageMedia(key) && fields.media && (
-                <div className="home-pathway-editor wide">
+                <div className="home-pathway-editor wide" id="page-photos">
                   <div className="home-pathway-editor-heading">
                     <strong>Page photos</strong>
-                    <small>Upload replaces the public {sectionDefinitions[key].label} photos after you save</small>
+                    <small>
+                      Upload the public {sectionDefinitions[key].label} photo here, then click Update public page
+                    </small>
                   </div>
                   <fieldset>
                     <legend>Main photo</legend>
@@ -501,6 +484,25 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
                     ))}
                 </div>
               )}
+              {key === "about" && (
+                <AboutProfileEditor profile={fields.about} onChange={updateAbout} />
+              )}
+              <label>
+                Eyebrow
+                <input maxLength={80} required value={fields.eyebrow} onChange={(event) => setFields({ ...fields, eyebrow: event.target.value })} />
+              </label>
+              <label className="wide">
+                Headline
+                <input maxLength={160} required value={fields.title} onChange={(event) => setFields({ ...fields, title: event.target.value })} />
+              </label>
+              <label className="wide">
+                Summary
+                <textarea rows={3} maxLength={600} required value={fields.summary} onChange={(event) => setFields({ ...fields, summary: event.target.value })} />
+              </label>
+              <label className="wide">
+                Public statement
+                <input maxLength={220} required value={fields.statement} onChange={(event) => setFields({ ...fields, statement: event.target.value })} />
+              </label>
               <div className="home-pathway-editor wide">
                 <div className="home-pathway-editor-heading">
                   <strong>Page feature cards</strong>

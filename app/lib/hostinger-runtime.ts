@@ -88,7 +88,7 @@ const schema = [
   `CREATE TABLE IF NOT EXISTS site_pages (
     \`key\` VARCHAR(80) PRIMARY KEY, eyebrow VARCHAR(160) NOT NULL, title VARCHAR(255) NOT NULL,
     summary TEXT NOT NULL, statement TEXT NOT NULL, features_json LONGTEXT NOT NULL,
-    about_json LONGTEXT NOT NULL, media_json LONGTEXT NULL,
+    about_json LONGTEXT NOT NULL, media_json LONGTEXT NULL, content_json LONGTEXT NULL,
     updated_by BIGINT UNSIGNED NOT NULL,
     updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
@@ -128,6 +128,7 @@ function databaseConfig() {
 
 const schemaMigrations = [
   "ALTER TABLE site_pages ADD COLUMN media_json LONGTEXT NULL",
+  "ALTER TABLE site_pages ADD COLUMN content_json LONGTEXT NULL",
 ];
 
 async function ensureSchema(pool: Pool) {

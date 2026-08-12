@@ -5,6 +5,18 @@ import {
   type AboutProfile,
 } from "../../lib/bcc-profile";
 import {
+  defaultCertificatesContent,
+  defaultGivingContent,
+  normalizeCertificatesContent,
+  normalizeGivingContent,
+  parsePageContent,
+  serializePageContent,
+  supportsPageContent,
+  type CertificatesContent,
+  type GivingContent,
+  type PageStructuredContent,
+} from "../../lib/page-content";
+import {
   normalizePageMedia,
   parsePageMedia,
   supportsPageMedia,
@@ -28,6 +40,7 @@ async function ensureSchema(db: D1Database) {
     features_json TEXT NOT NULL DEFAULT '[]',
     about_json TEXT NOT NULL DEFAULT '{}',
     media_json TEXT NOT NULL DEFAULT '{}',
+    content_json TEXT NOT NULL DEFAULT '{}',
     updated_by INTEGER NOT NULL,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   )`).run();
@@ -41,6 +54,9 @@ async function ensureSchema(db: D1Database) {
   }
   if (!names.has("media_json")) {
     await db.prepare("ALTER TABLE site_pages ADD COLUMN media_json TEXT NOT NULL DEFAULT '{}'").run();
+  }
+  if (!names.has("content_json")) {
+    await db.prepare("ALTER TABLE site_pages ADD COLUMN content_json TEXT NOT NULL DEFAULT '{}'").run();
   }
 }
 
@@ -98,7 +114,19 @@ function validAbout(value: unknown): value is AboutProfile {
 }
 
 function pageResponse(key: SectionKey, page: Record<string, unknown> | null) {
-  if (!page) return null;
+  if (!page) {
+    if (!supportsPageContent(key)) return null;
+    return {
+      key,
+      ...sectionDefinitions[key],
+      features: sectionDefinitions[key].features,
+      content: key === "giving"
+        ? { giving: defaultGivingContent }
+        : { certificates: defaultCertificatesContent },
+      updated_at: null,
+    };
+  }
+  const content = parsePageContent(key, page.content_json);
   return {
     key: page.key,
     eyebrow: page.eyebrow,
@@ -108,6 +136,7 @@ function pageResponse(key: SectionKey, page: Record<string, unknown> | null) {
     features: rowFeatures(page.features_json, key),
     about: key === "about" ? rowAbout(page.about_json) : undefined,
     media: parsePageMedia(key, page.media_json),
+    content: supportsPageContent(key) ? content : undefined,
     updated_at: page.updated_at,
   };
 }
@@ -120,7 +149,7 @@ export async function GET(request: Request) {
   const db = authRuntime().DB;
   await ensureSchema(db);
   const page = await db
-    .prepare("SELECT key, eyebrow, title, summary, statement, features_json, about_json, media_json, updated_at FROM site_pages WHERE key = ?")
+    .prepare("SELECT key, eyebrow, title, summary, statement, features_json, about_json, media_json, content_json, updated_at FROM site_pages WHERE key = ?")
     .bind(key)
     .first<Record<string, unknown>>();
   return Response.json(
@@ -145,6 +174,9 @@ export async function PATCH(request: Request) {
     features?: SectionFeature[];
     about?: AboutProfile;
     media?: PageMedia;
+    content?: PageStructuredContent;
+    giving?: GivingContent;
+    certificates?: CertificatesContent;
   };
   if (!sectionKeys.includes(payload.key as SectionKey)) {
     return Response.json({ error: "Valid page key is required" }, { status: 400 });
@@ -169,6 +201,20 @@ export async function PATCH(request: Request) {
   const media = supportsPageMedia(payload.key as string)
     ? normalizePageMedia(payload.key as SectionKey, payload.media)
     : undefined;
+
+  let content: PageStructuredContent | undefined;
+  if (payload.key === "giving") {
+    content = {
+      giving: normalizeGivingContent(payload.content?.giving || payload.giving),
+    };
+  } else if (payload.key === "certificates") {
+    content = {
+      certificates: normalizeCertificatesContent(
+        payload.content?.certificates || payload.certificates,
+      ),
+    };
+  }
+
   if (
     !eyebrow || eyebrow.length > 80 ||
     !title || title.length > 160 ||
@@ -184,10 +230,11 @@ export async function PATCH(request: Request) {
   const about = payload.key === "about"
     ? normalizeAboutProfile(payload.about)
     : normalizeAboutProfile(defaultAboutProfile);
+  const contentJson = serializePageContent(payload.key as string, content);
   await db
     .prepare(`INSERT INTO site_pages
-      (key, eyebrow, title, summary, statement, features_json, about_json, media_json, updated_by, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      (key, eyebrow, title, summary, statement, features_json, about_json, media_json, content_json, updated_by, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(key) DO UPDATE SET
         eyebrow = excluded.eyebrow,
         title = excluded.title,
@@ -196,6 +243,7 @@ export async function PATCH(request: Request) {
         features_json = excluded.features_json,
         about_json = excluded.about_json,
         media_json = excluded.media_json,
+        content_json = excluded.content_json,
         updated_by = excluded.updated_by,
         updated_at = CURRENT_TIMESTAMP`)
     .bind(
@@ -207,6 +255,7 @@ export async function PATCH(request: Request) {
       JSON.stringify(features),
       JSON.stringify(about),
       JSON.stringify(media || {}),
+      contentJson,
       user.id,
     )
     .run();
@@ -222,6 +271,7 @@ export async function PATCH(request: Request) {
         features,
         about: payload.key === "about" ? about : undefined,
         media,
+        content,
       },
     },
     { headers: noStoreHeaders() },

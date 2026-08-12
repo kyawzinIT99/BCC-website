@@ -18,6 +18,14 @@ import {
   type SectionKey,
 } from "../lib/sections";
 import {
+  defaultCertificatesContent,
+  defaultGivingContent,
+  type CertificateItem,
+  type CertificatesContent,
+  type GivingContent,
+  type PageStructuredContent,
+} from "../lib/page-content";
+import {
   defaultPageMedia,
   supportsPageMedia,
   type PageMedia,
@@ -32,6 +40,7 @@ type PageFields = {
   features: [SectionFeature, SectionFeature, SectionFeature];
   about: AboutProfile;
   media?: PageMedia;
+  content?: PageStructuredContent;
 };
 
 type PageSelection = "home" | SectionKey;
@@ -46,6 +55,17 @@ function defaults(key: SectionKey): PageFields {
     features: page.features.map((feature) => ({ ...feature })) as PageFields["features"],
     about: cloneAboutProfile(defaultAboutProfile),
     media: supportsPageMedia(key) ? { ...defaultPageMedia[key], featureImages: defaultPageMedia[key].featureImages.map((item) => ({ ...item })) as PageMedia["featureImages"] } : undefined,
+    content:
+      key === "giving"
+        ? { giving: { ...defaultGivingContent } }
+        : key === "certificates"
+          ? {
+              certificates: {
+                galleryIntro: defaultCertificatesContent.galleryIntro,
+                items: defaultCertificatesContent.items.map((item) => ({ ...item })),
+              },
+            }
+          : undefined,
   };
 }
 
@@ -75,6 +95,7 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
             features: payload.page.features || fallback.features,
             about: payload.page.about || fallback.about,
             media: payload.page.media || fallback.media,
+            content: payload.page.content || fallback.content,
           });
         }
       })
@@ -116,6 +137,7 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
           features: payload.page.features || fallback.features,
           about: payload.page.about || fallback.about,
           media: payload.page.media || fallback.media,
+          content: payload.page.content || fallback.content,
         });
       }
       setNotice(
@@ -135,6 +157,59 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
       ...current,
       about: { ...current.about, ...patch },
     }));
+  }
+
+  function updateGiving(patch: Partial<GivingContent>) {
+    setFields((current) => ({
+      ...current,
+      content: {
+        ...current.content,
+        giving: { ...(current.content?.giving || defaultGivingContent), ...patch },
+      },
+    }));
+  }
+
+  function updateCertificates(next: CertificatesContent) {
+    setFields((current) => ({
+      ...current,
+      content: { ...current.content, certificates: next },
+    }));
+  }
+
+  async function uploadCertificateImage(file: File | undefined, index: number) {
+    if (!file || key !== "certificates" || !fields.content?.certificates) return;
+    setUploadingPageImage(`cert-${index}`);
+    setNotice("");
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      form.set(
+        "altText",
+        fields.content.certificates.items[index]?.imageAlt ||
+          fields.content.certificates.items[index]?.title ||
+          file.name,
+      );
+      const response = await fetch("/api/media", { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Unable to upload image");
+      const mediaId = Number(payload.media.id);
+      const url = `/api/media?id=${mediaId}`;
+      const items = fields.content.certificates.items.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              imageUrl: url,
+              imageAlt: item.imageAlt || String(payload.media.alt_text || item.title || file.name),
+            }
+          : item,
+      );
+      updateCertificates({ ...fields.content.certificates, items });
+      setNotice("Certificate image uploaded. Click Update public page to publish it.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to upload image");
+    } finally {
+      setUploadingPageImage(null);
+    }
   }
 
   async function uploadHeroImage(file: File | undefined) {
@@ -486,6 +561,247 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
               )}
               {key === "about" && (
                 <AboutProfileEditor profile={fields.about} onChange={updateAbout} />
+              )}
+              {key === "giving" && fields.content?.giving && (
+                <div className="home-pathway-editor wide" id="giving-totals-editor">
+                  <div className="home-pathway-editor-heading">
+                    <strong>Donation amount and total</strong>
+                    <small>These figures appear on the public Giving page</small>
+                  </div>
+                  <label className="pathway-visibility">
+                    <input
+                      type="checkbox"
+                      checked={fields.content.giving.showAmounts}
+                      onChange={(event) => updateGiving({ showAmounts: event.target.checked })}
+                    />
+                    Show donation figures on the website
+                  </label>
+                  <label>
+                    Current amount label
+                    <input
+                      maxLength={80}
+                      required
+                      value={fields.content.giving.amountLabel}
+                      onChange={(event) => updateGiving({ amountLabel: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Current amount value
+                    <input
+                      maxLength={40}
+                      required
+                      value={fields.content.giving.amountValue}
+                      onChange={(event) => updateGiving({ amountValue: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Total label
+                    <input
+                      maxLength={80}
+                      required
+                      value={fields.content.giving.totalLabel}
+                      onChange={(event) => updateGiving({ totalLabel: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Total value
+                    <input
+                      maxLength={40}
+                      required
+                      value={fields.content.giving.totalValue}
+                      onChange={(event) => updateGiving({ totalValue: event.target.value })}
+                    />
+                  </label>
+                  <label className="wide">
+                    Transparency note
+                    <textarea
+                      rows={3}
+                      maxLength={600}
+                      required
+                      value={fields.content.giving.note}
+                      onChange={(event) => updateGiving({ note: event.target.value })}
+                    />
+                  </label>
+                  <label className="wide">
+                    How to give
+                    <textarea
+                      rows={3}
+                      maxLength={800}
+                      required
+                      value={fields.content.giving.howToGive}
+                      onChange={(event) => updateGiving({ howToGive: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Updated label
+                    <input
+                      maxLength={80}
+                      required
+                      value={fields.content.giving.updatedLabel}
+                      onChange={(event) => updateGiving({ updatedLabel: event.target.value })}
+                    />
+                  </label>
+                </div>
+              )}
+              {key === "certificates" && fields.content?.certificates && (
+                <div className="home-pathway-editor wide" id="certificates-editor">
+                  <div className="home-pathway-editor-heading">
+                    <strong>Certificates gallery</strong>
+                    <small>Only items marked visible appear on the public Certificates page</small>
+                  </div>
+                  <label className="wide">
+                    Gallery introduction
+                    <textarea
+                      rows={2}
+                      maxLength={500}
+                      required
+                      value={fields.content.certificates.galleryIntro}
+                      onChange={(event) =>
+                        updateCertificates({
+                          ...fields.content!.certificates!,
+                          galleryIntro: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  {fields.content.certificates.items.map((item, index) => (
+                    <fieldset key={item.id}>
+                      <legend>{`Certificate ${String(index + 1).padStart(2, "0")}`}</legend>
+                      <label className="pathway-visibility">
+                        <input
+                          type="checkbox"
+                          checked={item.visible}
+                          onChange={(event) => {
+                            const items = fields.content!.certificates!.items.map((row, rowIndex) =>
+                              rowIndex === index ? { ...row, visible: event.target.checked } : row,
+                            );
+                            updateCertificates({ ...fields.content!.certificates!, items });
+                          }}
+                        />
+                        Visible on website
+                      </label>
+                      <label>
+                        Title
+                        <input
+                          maxLength={140}
+                          required
+                          value={item.title}
+                          onChange={(event) => {
+                            const items = fields.content!.certificates!.items.map((row, rowIndex) =>
+                              rowIndex === index ? { ...row, title: event.target.value } : row,
+                            );
+                            updateCertificates({ ...fields.content!.certificates!, items });
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Issuer
+                        <input
+                          maxLength={120}
+                          value={item.issuer}
+                          onChange={(event) => {
+                            const items = fields.content!.certificates!.items.map((row, rowIndex) =>
+                              rowIndex === index ? { ...row, issuer: event.target.value } : row,
+                            );
+                            updateCertificates({ ...fields.content!.certificates!, items });
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Year
+                        <input
+                          maxLength={20}
+                          value={item.year}
+                          onChange={(event) => {
+                            const items = fields.content!.certificates!.items.map((row, rowIndex) =>
+                              rowIndex === index ? { ...row, year: event.target.value } : row,
+                            );
+                            updateCertificates({ ...fields.content!.certificates!, items });
+                          }}
+                        />
+                      </label>
+                      <label className="wide">
+                        Description
+                        <textarea
+                          rows={2}
+                          maxLength={400}
+                          value={item.description}
+                          onChange={(event) => {
+                            const items = fields.content!.certificates!.items.map((row, rowIndex) =>
+                              rowIndex === index ? { ...row, description: event.target.value } : row,
+                            );
+                            updateCertificates({ ...fields.content!.certificates!, items });
+                          }}
+                        />
+                      </label>
+                      <label className="wide">
+                        Image URL
+                        <input
+                          maxLength={500}
+                          value={item.imageUrl}
+                          onChange={(event) => {
+                            const items = fields.content!.certificates!.items.map((row, rowIndex) =>
+                              rowIndex === index ? { ...row, imageUrl: event.target.value } : row,
+                            );
+                            updateCertificates({ ...fields.content!.certificates!, items });
+                          }}
+                        />
+                      </label>
+                      <label className="wide">
+                        Upload certificate image
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/gif,image/webp"
+                          disabled={Boolean(uploadingPageImage) || saving}
+                          onChange={(event) => {
+                            void uploadCertificateImage(event.target.files?.[0], index);
+                            event.target.value = "";
+                          }}
+                        />
+                        <small className="field-guidance">
+                          {uploadingPageImage === `cert-${index}`
+                            ? "Uploading…"
+                            : "Upload a scan or photo, then Update public page."}
+                        </small>
+                      </label>
+                      <button
+                        type="button"
+                        className="button-secondary"
+                        disabled={fields.content!.certificates!.items.length <= 1}
+                        onClick={() => {
+                          const items = fields.content!.certificates!.items.filter((_, rowIndex) => rowIndex !== index);
+                          updateCertificates({ ...fields.content!.certificates!, items });
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </fieldset>
+                  ))}
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    disabled={(fields.content.certificates.items.length || 0) >= 12}
+                    onClick={() => {
+                      const nextIndex = fields.content!.certificates!.items.length + 1;
+                      const item: CertificateItem = {
+                        id: `cert-${Date.now()}`,
+                        title: `Certificate ${nextIndex}`,
+                        issuer: "",
+                        year: "",
+                        description: "",
+                        imageUrl: "",
+                        imageAlt: "",
+                        visible: false,
+                      };
+                      updateCertificates({
+                        ...fields.content!.certificates!,
+                        items: [...fields.content!.certificates!.items, item],
+                      });
+                    }}
+                  >
+                    Add certificate
+                  </button>
+                </div>
               )}
               <label>
                 Eyebrow

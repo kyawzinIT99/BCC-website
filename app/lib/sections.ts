@@ -1,6 +1,8 @@
 export const sectionKeys = [
   "about",
   "our-work",
+  "giving",
+  "certificates",
   "stories",
   "approach",
   "get-involved",
@@ -95,12 +97,42 @@ export const sectionDefinitions: Record<SectionKey, SectionDefinition> = {
       { number: "03", title: "Support responsibly", description: "Discuss future volunteering, partnership or funding without sending payment details." },
     ],
   },
+  giving: {
+    key: "giving",
+    label: "Giving",
+    eyebrow: "Community support",
+    title: "Transparent giving. Shared responsibility.",
+    summary:
+      "See published appeal figures and yearly totals updated by authorised administrators. Support is welcomed through trusted community channels.",
+    statement: "Care given with clarity. Trust kept with open reporting.",
+    features: [
+      { number: "01", title: "Transparency", description: "Donation amounts and totals shown here are controlled in the Admin Panel." },
+      { number: "02", title: "Stewardship", description: "Funds and appeals are handled with committee oversight and clear purpose." },
+      { number: "03", title: "Community care", description: "Giving supports faith, fellowship and practical help across Western Australia." },
+    ],
+  },
+  certificates: {
+    key: "certificates",
+    label: "Certificates",
+    eyebrow: "Recognition",
+    title: "Certificates and formal recognition.",
+    summary:
+      "A public gallery of certificates and recognitions published by authorised administrators for community trust and shared history.",
+    statement: "Service remembered. Trust made visible.",
+    features: [
+      { number: "01", title: "Published by Admin", description: "Only approved certificates appear on this page." },
+      { number: "02", title: "Community trust", description: "Formal recognition helps families see the community’s accountable service." },
+      { number: "03", title: "Living record", description: "New certificates can be added anytime from the Admin Panel." },
+    ],
+  },
 };
 
 export const publicNavigation = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
   { href: "/our-work", label: "Our work" },
+  { href: "/giving", label: "Giving" },
+  { href: "/certificates", label: "Certificates" },
   { href: "/stories", label: "News & stories" },
   { href: "/events", label: "Events" },
   { href: "/gallery", label: "Gallery" },

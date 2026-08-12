@@ -15,7 +15,15 @@ export const publicLanguages = [
 
 export type PublicLanguage = (typeof publicLanguages)[number]["code"];
 
-const primaryHrefs = new Set(["/about", "/our-work", "/stories", "/events", "/gallery"]);
+const primaryHrefs = new Set([
+  "/about",
+  "/our-work",
+  "/giving",
+  "/certificates",
+  "/stories",
+  "/events",
+  "/gallery",
+]);
 
 export function PublicHeader({
   activeHref,

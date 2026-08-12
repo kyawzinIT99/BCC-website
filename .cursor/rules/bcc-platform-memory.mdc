@@ -5,9 +5,8 @@ alwaysApply: true
 
 # BCC platform memory
 
-## Product
-- Burmese Catholic Community of Western Australia dynamic website + staff Admin Panel.
-- GitHub: `https://github.com/kyawzinIT99/BCC-website.git`
+- Public pages include Home, About, Our Work, Giving, Certificates, News & Stories, Approach, Get Involved, Events, Gallery.
+- Giving (donation amount + yearly total) and Certificates gallery are Admin-controlled via Public pages (`content_json`).
 
 ## Hosting split (do not change without owner confirmation)
 - **Hostinger Pro**: domain, SSL, up to 10 mailboxes (planned; not in API portfolio yet).
@@ -15,10 +14,16 @@ alwaysApply: true
 - **Coming Linux VPS / website essentials**: deploy BCC website (app, DB, media, reverse proxy, backups) — either on a new VPS or as additional Docker services on this KVM 2 if capacity allows. Prefer not duplicating n8n.
 - Hostinger API connected via `HOSTINGER_API_TOKEN` in `.dev.vars` (never commit). Base: `https://developers.hostinger.com`.
 
+## Live website deploy branch (critical)
+- **bccwac.com Hostinger Node app builds from `codex/hostinger-production`, NOT `main`.**
+- For any live logo/media/admin/site fix: commit + push on `codex/hostinger-production` (merge from `main` when needed), then trigger the Hostinger Node rebuild.
+- That branch keeps Hostinger-specific runtime (`app/lib/hostinger-runtime.ts`, MySQL/`mysql2`, `next` start scripts). Do not assume `main` alone updates production.
+- Push HTTPS only: `https://github.com/kyawzinIT99/BCC-website.git`.
+
 ## Recently built n8n workflows (already integrated)
 - `BCC Inquiry Alert` (`U1gvYq4WnZvxyMIm`) → `/webhook/bcc-inquiry-alert` (created + status changed + closed; closed includes staff `handledBy` / `closedBy`)
 - `BCC Publish Distribution` (`czx6JcuNWP2unBRv`) → `/webhook/bcc-publish-distribution`
-- `BCC Subscribe Alert` (`JBDK9TqPnYJCkAMn`) → `/webhook/bcc-subscribe-alert` (new/reactivated subscribers → Telegram/Gmail staff alert)
+- `BCC Subscribe Alert` (`JBDK9TqPnYJCkAMn`) → `/webhook/bcc-subscribe-alert` (new/reactivated subscribers → Telegram/Gmail staff alert **and** professional welcome Gmail to the visitor with website, Events, About, Facebook group, and `info@bccwac.com`)
 - `BCC Event Mail` (`bS9NmXubTc9y9Kc0`) → `/webhook/bcc-event-mail` (published upcoming event → Gmail to active subscribers + staff Telegram summary)
 - Staff Telegram alerts use HTML parse mode with a shared layout: `BCC · …` headline, bold name, escaped user text (safer than Markdown for names/emails).
 - Website env in `.dev.vars`: `CRM_ALERTS_ENABLED`, `N8N_INQUIRY_ALERT_WEBHOOK`, `N8N_PUBLISH_WEBHOOK`, `N8N_SUBSCRIBE_ALERT_WEBHOOK`, `N8N_EVENT_MAIL_WEBHOOK`, shared `N8N_INQUIRY_WEBHOOK_SECRET` (never commit).
@@ -26,7 +31,7 @@ alwaysApply: true
 ## Mail subscribe → Admin → n8n → event emails
 - Public form on Home + Events (`MailSubscribe`) posts to `/api/subscribers` with consent.
 - Admin panel **Subscribers** list (owner/admin only); can mark unsubscribed.
-- New subscribe alerts staff via `N8N_SUBSCRIBE_ALERT_WEBHOOK`.
+- New subscribe alerts staff via `N8N_SUBSCRIBE_ALERT_WEBHOOK`, and n8n also sends a welcome email to the subscriber (not only staff).
 - Publishing an **upcoming** event calls `N8N_EVENT_MAIL_WEBHOOK` with event details + active subscriber emails for Gmail delivery in n8n.
 - Draft events never trigger mail. Re-saving an already-published event does not re-send.
 

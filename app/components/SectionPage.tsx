@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -9,6 +7,12 @@ import {
   type CommitteeMember,
 } from "../lib/bcc-profile";
 import type { CommunityPost } from "../lib/content";
+import {
+  defaultCertificatesContent,
+  defaultGivingContent,
+  type CertificatesContent,
+  type GivingContent,
+} from "../lib/page-content";
 import {
   defaultPageMedia,
   supportsPageMedia,
@@ -37,6 +41,8 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
   const [pageMedia, setPageMedia] = useState<PageMedia | undefined>(() =>
     supportsPageMedia(sectionKey) ? defaultPageMedia[sectionKey] : undefined,
   );
+  const [giving, setGiving] = useState<GivingContent>(defaultGivingContent);
+  const [certificates, setCertificates] = useState<CertificatesContent>(defaultCertificatesContent);
   const [language, setLanguage] = useState<PublicLanguage>("en");
   const visibleFeatures = sectionKey === "our-work"
     ? pageCopy.features.map((feature) =>
@@ -47,6 +53,7 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
     : pageCopy.features;
   const aboutMedia = pageMedia || defaultPageMedia.about;
   const workMedia = pageMedia || defaultPageMedia["our-work"];
+  const visibleCertificates = certificates.items.filter((item) => item.visible);
 
   useEffect(() => {
     if (sectionKey !== "stories") {
@@ -63,7 +70,7 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
 
   useEffect(() => {
     fetch(`/api/pages?key=${encodeURIComponent(sectionKey)}`, { cache: "no-store" })
-      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((payload) => {
         if (payload.page) {
           setPageCopy((current) => ({ ...current, ...payload.page }));
@@ -73,12 +80,20 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
           if (payload.page.media && supportsPageMedia(sectionKey)) {
             setPageMedia(payload.page.media);
           }
+          if (sectionKey === "giving" && payload.page.content?.giving) {
+            setGiving(payload.page.content.giving);
+          }
+          if (sectionKey === "certificates" && payload.page.content?.certificates) {
+            setCertificates(payload.page.content.certificates);
+          }
         }
       })
       .catch(() => {
         setPageCopy(section);
         if (sectionKey === "about") setAboutProfile(cloneAboutProfile(defaultAboutProfile));
         if (supportsPageMedia(sectionKey)) setPageMedia(defaultPageMedia[sectionKey]);
+        if (sectionKey === "giving") setGiving(defaultGivingContent);
+        if (sectionKey === "certificates") setCertificates(defaultCertificatesContent);
       });
   }, [section, sectionKey]);
 
@@ -153,6 +168,72 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
       <section className="section-statement">
         <p>{pageCopy.statement}</p>
       </section>
+
+      {sectionKey === "giving" && giving.showAmounts ? (
+        <section className="giving-totals" aria-labelledby="giving-totals-title">
+          <div className="giving-totals-intro">
+            <p className="eyebrow">Published figures</p>
+            <h2 id="giving-totals-title">Donation amount and yearly total</h2>
+            <p>{giving.note}</p>
+            <small>{giving.updatedLabel}</small>
+          </div>
+          <div className="giving-totals-grid">
+            <article>
+              <span>{giving.amountLabel}</span>
+              <strong>{giving.amountValue}</strong>
+            </article>
+            <article>
+              <span>{giving.totalLabel}</span>
+              <strong>{giving.totalValue}</strong>
+            </article>
+          </div>
+          <div className="giving-howto">
+            <h3>How to give</h3>
+            <p>{giving.howToGive}</p>
+            <Link className="button button-dark" href="/get-involved#community-contact">
+              Contact through Get Involved
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
+      {sectionKey === "certificates" ? (
+        <section className="certificates-gallery" aria-labelledby="certificates-gallery-title">
+          <div className="certificates-gallery-intro">
+            <p className="eyebrow">Public record</p>
+            <h2 id="certificates-gallery-title">Certificates</h2>
+            <p>{certificates.galleryIntro}</p>
+          </div>
+          {visibleCertificates.length ? (
+            <div className="certificates-grid">
+              {visibleCertificates.map((item) => (
+                <article key={item.id} className="certificate-card">
+                  {item.imageUrl ? (
+                    <figure>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.imageUrl} alt={item.imageAlt || item.title} loading="lazy" />
+                    </figure>
+                  ) : (
+                    <div className="certificate-placeholder" aria-hidden="true">
+                      <span>Certificate</span>
+                    </div>
+                  )}
+                  <div className="certificate-copy">
+                    <span>{[item.year, item.issuer].filter(Boolean).join(" · ")}</span>
+                    <h3>{item.title}</h3>
+                    {item.description ? <p>{item.description}</p> : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="section-empty">
+              <span>COMING INTO VIEW</span>
+              <p>Approved certificates will appear here after administrators publish them.</p>
+            </div>
+          )}
+        </section>
+      ) : null}
 
       {sectionKey === "stories" && (
         <section className="story-feed-boundary" aria-labelledby="story-feed-boundary-title">

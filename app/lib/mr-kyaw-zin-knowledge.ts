@@ -1,17 +1,18 @@
-export const projectKnowledgeVersion = "2026-08-10.1";
+export const projectKnowledgeVersion = "2026-08-12.1";
 
 export const projectKnowledge = `
 PROJECT: Burmese Catholic Community of Western Australia dynamic community platform.
 KNOWLEDGE VERSION: ${projectKnowledgeVersion}.
 
 CONFIRMED CURRENT IMPLEMENTATION
-- Public website pages: Home, About, Our Work, News & Stories, Our Approach, Get Involved, Events, Gallery.
+- Public website pages: Home, About, Our Work, Giving, Certificates, News & Stories, Our Approach, Get Involved, Events, Gallery.
+- Giving donation amount/total and Certificates gallery are Admin-controlled (Public pages) and published on the website.
 - Public contact path is Get Involved only. The floating Ask a question widget has been removed.
 - Private staff Admin Panel is separate from the public site.
 - Admin uses password sign-in, expiring HttpOnly sessions, and Owner / Administrator / Editor roles.
 - Owner manages staff accounts in Team Access.
 - Staff create posts, attach up to 4 photos as one story album, choose page placement, save draft, send for review, then authorised publish.
-- Mail subscribe on Home/Events stores subscribers in Admin. New/reactivated subscribers alert staff via n8n.
+- Mail subscribe on Home/Events stores subscribers in Admin. New/reactivated subscribers alert staff via n8n and also receive a welcome email (website, Facebook group, Events/About links, info@bccwac.com).
 - Publishing an upcoming event emails active subscribers via n8n Event Mail and notifies the BCC WA Charity Community Telegram group.
 - Inquiry alerts and subscribe alerts go to the Telegram staff group and bccwacharity@gmail.com when configured.
 - Mr. Kyaw Zin (AI, Networking, and Cloud) is Admin-only. WhatsApp support: +66 82 567 4570.
@@ -59,7 +60,7 @@ const faqBank: FaqEntry[] = [
   {
     keys: /(what pages|which pages|site map|website (have|include|contain)|public pages)/i,
     answer:
-      "Confirmed public pages: Home, About, Our Work, News & Stories, Our Approach, Get Involved, Events, and Gallery. Staff work in the private Admin Panel at /admin.",
+      "Confirmed public pages: Home, About, Our Work, Giving, Certificates, News & Stories, Our Approach, Get Involved, Events, and Gallery. Staff work in the private Admin Panel at /admin. Giving totals and Certificates are controlled in Admin → Public pages.",
   },
   {
     keys: /(get involved|enquiry|inquir|contact form|follow-?up queue)/i,
@@ -84,7 +85,7 @@ const faqBank: FaqEntry[] = [
   {
     keys: /(subscriber|subscribe|mail list|newsletter)/i,
     answer:
-      "Confirmed: visitors subscribe on Home or Events with consent. Admin → Subscribers lists them. New/reactivated subscribers trigger n8n staff alerts. Event Mail uses active consented subscribers only.",
+      "Confirmed: visitors subscribe on Home or Events with consent. Admin → Subscribers lists them. New/reactivated subscribers trigger n8n staff alerts and a welcome email to the visitor with website, Facebook group and community links. Event Mail uses active consented subscribers only.",
   },
   {
     keys: /(event mail|event email|upcoming event|remind)/i,

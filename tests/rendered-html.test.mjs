@@ -182,7 +182,8 @@ test("defines the separate staff Admin Panel", async () => {
   assert.match(admin, /MrKyawZinAssistant/);
   assert.match(assistant, /Mr\. Kyaw Zin/);
   assert.match(assistant, /iT Solutions ZONE/);
-  assert.match(assistant, /it-solutions-zone-logo\.png/);
+  assert.match(assistant, /itSolutionsZoneLogoDataUrl/);
+  assert.match(assistant, /itSolutionsZoneLogo/);
   assert.match(assistant, /AI · Automation · Innovation/);
   assert.match(assistant, /wa\.me\/66825674570/);
   assert.match(assistant, /Private · Setup mode/);

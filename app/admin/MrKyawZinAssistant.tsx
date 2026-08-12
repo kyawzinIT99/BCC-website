@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import type { PublicPlacement } from "../lib/content";
 import { assistantFaqPrompts } from "../lib/mr-kyaw-zin-knowledge";
+import { itSolutionsZoneLogoDataUrl } from "./itSolutionsZoneLogo";
 
 export type AssistantDraft = {
   title: string;
@@ -112,7 +113,7 @@ export function MrKyawZinAssistant({ draft, onApplySuggestion }: Props) {
             <div className="assistant-identity">
               <span className="assistant-avatar" aria-hidden="true">
                 <img
-                  src="/it-solutions-zone-logo.png"
+                  src={itSolutionsZoneLogoDataUrl}
                   alt=""
                   width={38}
                   height={38}
@@ -219,7 +220,7 @@ export function MrKyawZinAssistant({ draft, onApplySuggestion }: Props) {
           <span aria-hidden="true">×</span>
         ) : (
           <img
-            src="/it-solutions-zone-logo.png"
+            src={itSolutionsZoneLogoDataUrl}
             alt=""
             width={40}
             height={40}

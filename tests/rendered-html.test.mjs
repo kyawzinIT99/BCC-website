@@ -169,7 +169,7 @@ test("defines the separate staff Admin Panel", async () => {
   assert.match(admin, /Photo description/);
   assert.match(admin, /post\.mediaUrl/);
   assert.match(mediaApi, /post_media/);
-  assert.match(mediaApi, /p\.status = 'published'/);
+  assert.match(mediaApi, /SELECT object_key, filename, content_type FROM media WHERE id/);
   assert.match(postsApi, /post_media/);
   assert.match(postsApi, /MAX_GALLERY_MEDIA/);
   assert.match(mediaApi, /X-Content-Type-Options/);
@@ -233,6 +233,8 @@ test("defines the separate staff Admin Panel", async () => {
   assert.match(pageManager, /permanent page wording and framework/);
   assert.match(pageManager, /AboutProfileEditor/);
   assert.match(pageManager, /features: payload\.page\.features/);
+  assert.match(pageManager, /Upload hero image/);
+  assert.match(pageManager, /\/api\/media\?id=/);
   assert.match(pagesApi, /features_json/);
   assert.match(pagesApi, /about_json/);
   assert.match(pagesApi, /Administrator access is required/);

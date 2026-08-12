@@ -66,31 +66,14 @@ export async function GET(request: Request) {
   const mediaId = Number(new URL(request.url).searchParams.get("id"));
 
   if (Number.isSafeInteger(mediaId) && mediaId > 0) {
-    const media = user
-      ? await db
-          .prepare(
-            "SELECT object_key, filename, content_type FROM media WHERE id = ?",
-          )
-          .bind(mediaId)
-          .first<Record<string, unknown>>()
-      : await db
-          .prepare(`SELECT DISTINCT m.object_key, m.filename, m.content_type
-            FROM media m
-            WHERE m.id = ?
-              AND (
-                EXISTS (
-                  SELECT 1 FROM posts p
-                  WHERE p.media_id = m.id AND p.status = 'published'
-                )
-                OR EXISTS (
-                  SELECT 1 FROM post_media pm
-                  INNER JOIN posts p ON p.id = pm.post_id
-                  WHERE pm.media_id = m.id AND p.status = 'published'
-                )
-              )
-            LIMIT 1`)
-          .bind(mediaId)
-          .first<Record<string, unknown>>();
+    // Staff uploads are community assets. Serve by id so hero URLs and
+    // published stories work on Hostinger without requiring a second publish gate.
+    const media = await db
+      .prepare(
+        "SELECT object_key, filename, content_type FROM media WHERE id = ?",
+      )
+      .bind(mediaId)
+      .first<Record<string, unknown>>();
 
     if (!media) {
       return Response.json({ error: "Media not found" }, { status: 404 });

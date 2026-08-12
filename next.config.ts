@@ -23,6 +23,7 @@ const brandRewrites = [
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["mysql2"],
+  productionBrowserSourceMaps: false,
   async headers() {
     return [
       {

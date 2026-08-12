@@ -1,4 +1,5 @@
 import Image from "next/image";
+import logoImage from "../../public/bccwa-logo.jpg";
 
 type LogoMarkProps = {
   className?: string;
@@ -11,7 +12,7 @@ export function LogoMark({ className = "" }: LogoMarkProps) {
       aria-hidden="true"
     >
       <Image
-        src="/bccwa-logo.jpg"
+        src={logoImage}
         alt=""
         width={720}
         height={405}

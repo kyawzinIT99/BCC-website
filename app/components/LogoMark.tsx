@@ -1,10 +1,8 @@
-import Image from "next/image";
+import { bccwaLogoDataUrl } from "./brandAssets";
 
 type LogoMarkProps = {
   className?: string;
 };
-
-const logoSrc = "/logo.jpg";
 
 export function LogoMark({ className = "" }: LogoMarkProps) {
   return (
@@ -12,15 +10,8 @@ export function LogoMark({ className = "" }: LogoMarkProps) {
       className={`community-logo ${className}`.trim()}
       aria-hidden="true"
     >
-      <Image
-        src={logoSrc}
-        alt=""
-        width={720}
-        height={405}
-        sizes="72px"
-        priority
-        unoptimized
-      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={bccwaLogoDataUrl} alt="" width={720} height={405} />
     </span>
   );
 }

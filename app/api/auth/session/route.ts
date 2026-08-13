@@ -36,25 +36,35 @@ export async function POST(request: Request) {
     const payload = (await request.json()) as { email?: string; password?: string };
     const email = cleanEmail(payload.email || "");
     const password = payload.password || "";
-    const limitKey = await rateLimitKey("staff-login", request, email);
-    const limit = await checkRateLimit(db, {
-      key: limitKey,
-      limit: 5,
-      windowSeconds: 15 * 60,
-      blockSeconds: 15 * 60,
-    });
-    if (!limit.allowed) {
-      return Response.json(
-        { error: "Too many sign-in attempts. Try again later." },
-        {
-          status: 429,
-          headers: noStoreHeaders({ "Retry-After": String(limit.retryAfter) }),
-        },
-      );
-    }
-
     const bootstrapEmail = cleanEmail(authRuntime().BOOTSTRAP_ADMIN_EMAIL || "");
     const bootstrapPassword = authRuntime().BOOTSTRAP_ADMIN_PASSWORD || "";
+    const isBootstrap =
+      bootstrapEmail &&
+      validPassword(bootstrapPassword) &&
+      email === bootstrapEmail &&
+      password === bootstrapPassword;
+
+    const limitKey = await rateLimitKey("staff-login", request, email);
+
+    // Bootstrap credentials bypass the rate-limit block so the owner can always
+    // recover access regardless of prior failed attempts.
+    if (!isBootstrap) {
+      const limit = await checkRateLimit(db, {
+        key: limitKey,
+        limit: 5,
+        windowSeconds: 15 * 60,
+        blockSeconds: 15 * 60,
+      });
+      if (!limit.allowed) {
+        return Response.json(
+          { error: "Too many sign-in attempts. Try again later." },
+          {
+            status: 429,
+            headers: noStoreHeaders({ "Retry-After": String(limit.retryAfter) }),
+          },
+        );
+      }
+    }
 
     const countRow = await db
       .prepare("SELECT COUNT(*) AS count FROM staff_users")
@@ -68,14 +78,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // When bootstrap credentials are set and the login matches them, upsert the
-    // owner account so the owner can always regain access by setting these env vars.
-    if (
-      bootstrapEmail &&
-      validPassword(bootstrapPassword) &&
-      email === bootstrapEmail &&
-      password === bootstrapPassword
-    ) {
+    // Upsert the owner account when bootstrap credentials are presented so the
+    // owner can always regain access (create if missing, reset password if wrong).
+    if (isBootstrap) {
+      await clearRateLimit(db, limitKey);
       await db
         .prepare(`INSERT INTO staff_users
             (email, display_name, role, password_hash, status)

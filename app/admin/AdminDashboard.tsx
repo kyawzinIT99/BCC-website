@@ -12,6 +12,7 @@ import { LogoMark } from "../components/LogoMark";
 import { sectionDefinitions, sectionKeys } from "../lib/sections";
 import type { StaffUser } from "../lib/auth";
 import { AdminLogin } from "./AdminLogin";
+import { ChangePasswordPrompt } from "./ChangePasswordPrompt";
 import { TeamAccess } from "./TeamAccess";
 import {
   MrKyawZinAssistant,
@@ -402,6 +403,10 @@ export function AdminDashboard() {
 
   if (!session) {
     return <AdminLogin onSignedIn={setSession} />;
+  }
+
+  if (session.mustChangePassword) {
+    return <ChangePasswordPrompt user={session} onComplete={setSession} />;
   }
 
   const visibleNav = adminNavItems.filter(

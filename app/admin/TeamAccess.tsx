@@ -66,6 +66,24 @@ export function TeamAccess({ currentUser }: { currentUser: StaffUser }) {
     setNotice("");
   }
 
+  async function deleteAccount(user: StaffUser) {
+    if (!window.confirm(`Delete ${user.displayName} (${user.email})? This cannot be undone.`)) return;
+    setSaving(true);
+    setNotice("");
+    try {
+      const response = await fetch(`/api/users?id=${user.id}`, { method: "DELETE" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Unable to delete account");
+      setUsers((current) => current.filter((u) => u.id !== user.id));
+      if (editingId === user.id) cancelEdit();
+      setNotice(`${user.displayName} deleted.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to delete account");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function saveAccount(event: FormEvent) {
     event.preventDefault();
     setSaving(true);
@@ -234,6 +252,16 @@ export function TeamAccess({ currentUser }: { currentUser: StaffUser }) {
                 <small>{user.role}</small>
                 <i className={user.status === "active" ? "healthy" : ""} />
                 <button type="button" onClick={() => beginEdit(user)}>Modify</button>
+                {user.role !== "owner" && (
+                  <button
+                    type="button"
+                    className="button-danger-text"
+                    disabled={saving}
+                    onClick={() => void deleteAccount(user)}
+                  >
+                    Delete
+                  </button>
+                )}
               </article>
             ))}
           </div>

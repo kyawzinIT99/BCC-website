@@ -204,3 +204,33 @@ export async function PATCH(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  const rejected = mutationRejected(request);
+  if (rejected) return rejected;
+  const currentUser = await authenticateRequest(request);
+  if (!currentUser) return Response.json({ error: "Sign in required" }, { status: 401 });
+  if (currentUser.role !== "owner") {
+    return Response.json({ error: "Owner access is required" }, { status: 403 });
+  }
+  const id = Number(new URL(request.url).searchParams.get("id"));
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    return Response.json({ error: "Valid account ID is required" }, { status: 400 });
+  }
+  if (id === currentUser.id) {
+    return Response.json({ error: "You cannot delete your own account" }, { status: 400 });
+  }
+  const db = authRuntime().DB;
+  await ensureAuthSchema(db);
+  const target = await db
+    .prepare("SELECT id, role FROM staff_users WHERE id = ? LIMIT 1")
+    .bind(id)
+    .first() as Record<string, unknown> | null;
+  if (!target) return Response.json({ error: "Account not found" }, { status: 404 });
+  if (String(target.role) === "owner") {
+    return Response.json({ error: "Owner accounts cannot be deleted" }, { status: 400 });
+  }
+  await db.prepare("DELETE FROM staff_users WHERE id = ?").bind(id).run();
+  await recordAudit(db, currentUser.id, "staff.delete", "staff_user", id);
+  return Response.json({ ok: true }, { headers: noStoreHeaders() });
+}

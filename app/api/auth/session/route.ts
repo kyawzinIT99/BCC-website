@@ -53,28 +53,40 @@ export async function POST(request: Request) {
       );
     }
 
+    const bootstrapEmail = cleanEmail(authRuntime().BOOTSTRAP_ADMIN_EMAIL || "");
+    const bootstrapPassword = authRuntime().BOOTSTRAP_ADMIN_PASSWORD || "";
+
     const countRow = await db
       .prepare("SELECT COUNT(*) AS count FROM staff_users")
       .first();
     const userCount = Number((countRow as Record<string, unknown> | null)?.count || 0);
 
-    if (userCount === 0) {
-      const bootstrapEmail = cleanEmail(authRuntime().BOOTSTRAP_ADMIN_EMAIL || "");
-      const bootstrapPassword = authRuntime().BOOTSTRAP_ADMIN_PASSWORD || "";
-      if (!bootstrapEmail || !validPassword(bootstrapPassword)) {
-        return Response.json(
-          { error: "Owner setup is required before staff can sign in" },
-          { status: 503 },
-        );
-      }
-      if (email === bootstrapEmail && password === bootstrapPassword) {
-        await db
-          .prepare(`INSERT INTO staff_users
+    if (userCount === 0 && (!bootstrapEmail || !validPassword(bootstrapPassword))) {
+      return Response.json(
+        { error: "Owner setup is required before staff can sign in" },
+        { status: 503 },
+      );
+    }
+
+    // When bootstrap credentials are set and the login matches them, upsert the
+    // owner account so the owner can always regain access by setting these env vars.
+    if (
+      bootstrapEmail &&
+      validPassword(bootstrapPassword) &&
+      email === bootstrapEmail &&
+      password === bootstrapPassword
+    ) {
+      await db
+        .prepare(`INSERT INTO staff_users
             (email, display_name, role, password_hash, status)
-            VALUES (?, ?, 'owner', ?, 'active')`)
-          .bind(email, "Platform owner", await hashPassword(password))
-          .run();
-      }
+            VALUES (?, 'Platform owner', 'owner', ?, 'active')
+            ON CONFLICT(email) DO UPDATE SET
+              password_hash = excluded.password_hash,
+              role = 'owner',
+              status = 'active',
+              updated_at = CURRENT_TIMESTAMP`)
+        .bind(email, await hashPassword(password))
+        .run();
     }
 
     const row = await db

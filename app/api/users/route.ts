@@ -19,8 +19,8 @@ const selectUsers = `SELECT id, email, display_name, role, status, must_change_p
 export async function GET(request: Request) {
   const user = await authenticateRequest(request);
   if (!user) return Response.json({ error: "Sign in required" }, { status: 401 });
-  if (user.role !== "owner") {
-    return Response.json({ error: "Owner access is required" }, { status: 403 });
+  if (user.role !== "owner" && user.role !== "administrator") {
+    return Response.json({ error: "Administrator access is required" }, { status: 403 });
   }
   const result = await authRuntime().DB.prepare(selectUsers).all();
   return Response.json({

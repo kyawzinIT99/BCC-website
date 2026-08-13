@@ -306,7 +306,13 @@ export function AdminOperations({
         </div>
         <form className="password-form" onSubmit={changePassword}>
           <label>Current password<input name="currentPassword" type="password" required /></label>
-          <label>New password<input name="newPassword" type="password" minLength={12} maxLength={128} required /></label>
+          <label>
+            New password
+            <input name="newPassword" type="password" minLength={12} maxLength={128} required />
+            <small style={{ opacity: 0.65, fontSize: "0.8rem" }}>
+              Minimum 12 characters — any letters, numbers or symbols. No other rules.
+            </small>
+          </label>
           <button className="button-review" type="submit">Change password</button>
         </form>
         {notice ? <div className="admin-notice" role="status">{notice}</div> : null}

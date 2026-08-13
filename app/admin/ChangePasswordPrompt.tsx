@@ -86,6 +86,9 @@ export function ChangePasswordPrompt({
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
           />
+          <small style={{ opacity: 0.65, fontSize: "0.8rem" }}>
+            Minimum 12 characters — any letters, numbers or symbols. No other rules.
+          </small>
         </label>
         <label>
           Confirm new password

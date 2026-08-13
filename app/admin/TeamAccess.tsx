@@ -32,8 +32,11 @@ export function TeamAccess({ currentUser }: { currentUser: StaffUser }) {
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const isOwner = currentUser.role === "owner";
+  const isAdmin = currentUser.role === "administrator";
+
   useEffect(() => {
-    if (currentUser.role !== "owner") return;
+    if (!isOwner && !isAdmin) return;
     fetch("/api/users")
       .then(async (response) => {
         const payload = await response.json();
@@ -90,6 +93,29 @@ export function TeamAccess({ currentUser }: { currentUser: StaffUser }) {
     }
   }
 
+  async function toggleStatus(user: StaffUser) {
+    setSaving(true);
+    setNotice("");
+    try {
+      const newStatus = user.status === "active" ? "disabled" : "active";
+      const response = await fetch("/api/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id, status: newStatus }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Unable to update account");
+      setUsers((current) =>
+        current.map((u) => (u.id === user.id ? payload.user : u)),
+      );
+      setNotice(`${user.displayName} is now ${newStatus}.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to update account");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="team-access" id="team">
       <div className="panel-heading">
@@ -118,7 +144,7 @@ export function TeamAccess({ currentUser }: { currentUser: StaffUser }) {
         </p>
       </div>
 
-      {currentUser.role === "owner" ? (
+      {isOwner && (
         <div className="team-management-grid">
           <form className="team-account-form" onSubmit={saveAccount}>
             <h3>{editingId ? "Modify account" : "Create staff account"}</h3>
@@ -179,6 +205,9 @@ export function TeamAccess({ currentUser }: { currentUser: StaffUser }) {
                 value={form.password}
                 onChange={(event) => setForm({ ...form, password: event.target.value })}
               />
+              <small className="field-guidance">
+                At least 12 characters — letters, numbers or symbols, any combination. No other rules.
+              </small>
             </label>
             <div className="composer-actions">
               {editingId && (
@@ -209,7 +238,42 @@ export function TeamAccess({ currentUser }: { currentUser: StaffUser }) {
             ))}
           </div>
         </div>
-      ) : (
+      )}
+
+      {isAdmin && !isOwner && (
+        <div className="team-list">
+          <h3>Current website team</h3>
+          <p className="team-readonly" style={{ marginBottom: "1rem" }}>
+            As administrator you can activate or deactivate editor accounts.
+            Only the owner can create accounts or change roles.
+          </p>
+          {notice && <div className="admin-notice" role="status">{notice}</div>}
+          {users.map((user) => (
+            <article key={user.id}>
+              <span>{user.displayName.slice(0, 2).toUpperCase()}</span>
+              <div>
+                <strong>{user.displayName}</strong>
+                <p>{user.email}</p>
+              </div>
+              <small>{user.role}</small>
+              <i className={user.status === "active" ? "healthy" : ""} />
+              {user.role !== "owner" ? (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void toggleStatus(user)}
+                >
+                  {user.status === "active" ? "Deactivate" : "Activate"}
+                </button>
+              ) : (
+                <span style={{ fontSize: "0.75rem", opacity: 0.5 }}>protected</span>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+
+      {!isOwner && !isAdmin && (
         <p className="team-readonly">
           Your account can use the publishing workspace. Only the Owner can
           create accounts, change roles or reset passwords.

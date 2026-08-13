@@ -94,8 +94,10 @@ export async function PATCH(request: Request) {
   if (rejected) return rejected;
   const currentUser = await authenticateRequest(request);
   if (!currentUser) return Response.json({ error: "Sign in required" }, { status: 401 });
-  if (currentUser.role !== "owner") {
-    return Response.json({ error: "Owner access is required" }, { status: 403 });
+  const isOwner = currentUser.role === "owner";
+  const isAdmin = currentUser.role === "administrator";
+  if (!isOwner && !isAdmin) {
+    return Response.json({ error: "Administrator access is required" }, { status: 403 });
   }
 
   try {
@@ -108,13 +110,47 @@ export async function PATCH(request: Request) {
       status?: "active" | "disabled";
     };
     const id = Number(payload.id);
+    if (!Number.isSafeInteger(id)) {
+      return Response.json({ error: "Valid account ID is required" }, { status: 400 });
+    }
+
+    const db = authRuntime().DB;
+    await ensureAuthSchema(db);
+
+    // Administrators can only toggle active/disabled on non-owner accounts.
+    if (isAdmin && !isOwner) {
+      const target = await db
+        .prepare("SELECT id, role FROM staff_users WHERE id = ? LIMIT 1")
+        .bind(id)
+        .first() as Record<string, unknown> | null;
+      if (!target) return Response.json({ error: "Account not found" }, { status: 404 });
+      if (String(target.role) === "owner") {
+        return Response.json({ error: "Administrators cannot modify owner accounts" }, { status: 403 });
+      }
+      const status = payload.status === "disabled" ? "disabled" : "active";
+      await db
+        .prepare("UPDATE staff_users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .bind(status, id)
+        .run();
+      if (status === "disabled") {
+        await db.prepare("DELETE FROM staff_sessions WHERE user_id = ?").bind(id).run();
+      }
+      const row = await db
+        .prepare("SELECT id, email, display_name, role, status, must_change_password FROM staff_users WHERE id = ?")
+        .bind(id)
+        .first();
+      if (!row) return Response.json({ error: "Account not found" }, { status: 404 });
+      const updated = userFromRow(row as Record<string, unknown>);
+      await recordAudit(db, currentUser.id, "staff.update", "staff_user", updated.id, { status: updated.status });
+      return Response.json({ user: updated }, { headers: noStoreHeaders() });
+    }
+
+    // Owner: full edit (email, name, role, status, password).
     const email = cleanEmail(payload.email || "");
     const displayName = payload.displayName?.trim() || "";
-    const role = staffRoles.includes(payload.role as StaffRole)
-      ? payload.role!
-      : "editor";
+    const role = staffRoles.includes(payload.role as StaffRole) ? payload.role! : "editor";
     const status = payload.status === "disabled" ? "disabled" : "active";
-    if (!Number.isSafeInteger(id) || !email.includes("@") || !displayName) {
+    if (!email.includes("@") || !displayName) {
       return Response.json({ error: "Valid account details are required" }, { status: 400 });
     }
     if (id === currentUser.id && (status === "disabled" || role !== "owner")) {
@@ -125,26 +161,17 @@ export async function PATCH(request: Request) {
     }
     if (payload.password && !validPassword(payload.password)) {
       return Response.json(
-        { error: "Passwords must contain between 12 and 128 characters" },
+        { error: "Password must be between 12 and 128 characters" },
         { status: 400 },
       );
     }
 
-    const db = authRuntime().DB;
-    await ensureAuthSchema(db);
     if (payload.password) {
       await db
         .prepare(`UPDATE staff_users SET
           email = ?, display_name = ?, role = ?, status = ?, password_hash = ?,
           updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
-        .bind(
-          email,
-          displayName,
-          role,
-          status,
-          await hashPassword(payload.password),
-          id,
-        )
+        .bind(email, displayName, role, status, await hashPassword(payload.password), id)
         .run();
       if (id !== currentUser.id) {
         await db.prepare("DELETE FROM staff_sessions WHERE user_id = ?").bind(id).run();
@@ -158,9 +185,7 @@ export async function PATCH(request: Request) {
         .run();
     }
     const row = await db
-      .prepare(
-        "SELECT id, email, display_name, role, status, must_change_password FROM staff_users WHERE id = ?",
-      )
+      .prepare("SELECT id, email, display_name, role, status, must_change_password FROM staff_users WHERE id = ?")
       .bind(id)
       .first();
     if (!row) return Response.json({ error: "Account not found" }, { status: 404 });

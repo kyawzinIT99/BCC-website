@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { homePageMy, usePublicLanguage } from "../lib/public-language";
 
 export function MailSubscribe({
   source = "website",
@@ -9,6 +10,8 @@ export function MailSubscribe({
   source?: string;
   compact?: boolean;
 }) {
+  const [language] = usePublicLanguage();
+  const my = language === "my";
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -54,26 +57,27 @@ export function MailSubscribe({
       aria-labelledby="mail-subscribe-title"
     >
       <div className="mail-subscribe-copy">
-        <p className="mail-subscribe-eyebrow">Stay updated</p>
-        <h2 id="mail-subscribe-title">Get upcoming event emails</h2>
+        <p className="mail-subscribe-eyebrow">{my ? homePageMy.subscribeEyebrow : "Stay updated"}</p>
+        <h2 id="mail-subscribe-title">{my ? homePageMy.subscribeTitle : "Get upcoming event emails"}</h2>
         <p>
-          Subscribe for approved community notices. Your email stays private —
-          staff are alerted, and n8n can send mail when a new event is published.
+          {my
+            ? homePageMy.subscribeBody
+            : "Subscribe for approved community notices. Your email stays private — staff are alerted, and n8n can send mail when a new event is published."}
         </p>
       </div>
       <form className="mail-subscribe-form" onSubmit={onSubmit}>
         <label>
-          Name
+          {my ? homePageMy.subscribeName : "Name"}
           <input
             name="name"
             type="text"
             maxLength={80}
             autoComplete="name"
-            placeholder="Your name"
+            placeholder={my ? homePageMy.subscribeNamePlaceholder : "Your name"}
           />
         </label>
         <label>
-          Email
+          {my ? homePageMy.subscribeEmail : "Email"}
           <input
             name="email"
             type="email"
@@ -90,12 +94,13 @@ export function MailSubscribe({
         <label className="mail-subscribe-consent">
           <input name="consent" type="checkbox" required />
           <span>
-            I agree to receive community event updates by email. I understand I
-            can ask staff to unsubscribe at any time.
+            {my
+              ? homePageMy.subscribeConsent
+              : "I agree to receive community event updates by email. I understand I can ask staff to unsubscribe at any time."}
           </span>
         </label>
         <button type="submit" disabled={busy}>
-          {busy ? "Subscribing…" : "Subscribe"}
+          {busy ? (my ? homePageMy.subscribeBusy : "Subscribing…") : my ? homePageMy.subscribeButton : "Subscribe"}
         </button>
         {notice ? (
           <p className="mail-subscribe-notice" role="status">

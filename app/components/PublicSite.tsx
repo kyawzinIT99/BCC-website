@@ -13,7 +13,7 @@ import {
   type PublicLanguage,
 } from "./PublicHeader";
 import { MailSubscribe } from "./MailSubscribe";
-import { chromeMy, usePublicLanguage } from "../lib/public-language";
+import { chromeMy, homePageMy, usePublicLanguage } from "../lib/public-language";
 
 const copy = {
   en: {
@@ -210,6 +210,7 @@ export function PublicSite() {
       .catch(() => undefined);
   }, []);
 
+  const my = language === "my";
   const localizedHome = language === "en"
     ? home
     : {
@@ -218,9 +219,11 @@ export function PublicSite() {
         title: pageCopy.title,
         intro: pageCopy.intro,
         helpTitle: pageCopy.helpTitle,
+        helpIntro: my ? homePageMy.helpIntro : home.helpIntro,
         pathways: home.pathways.map((pathway, index) => ({
           ...pathway,
           title: pageCopy.routes[index],
+          description: my ? homePageMy.pathwayDescriptions[index] : pathway.description,
         })) as HomePageSettings["pathways"],
       };
 
@@ -236,7 +239,7 @@ export function PublicSite() {
       <div className="v2-announcement">
         <span className="v2-announcement-dot" />
         <span>{home.announcement}</span>
-        <a href="#stories">Read latest stories →</a>
+        <a href="#stories">{my ? homePageMy.readLatestStories : "Read latest stories →"}</a>
       </div>
 
       {/* ── Header ──────────────────────────────────────────── */}
@@ -269,7 +272,7 @@ export function PublicSite() {
             </Link>
           </div>
           <p className="v2-hero-notice">
-            Independent community organisation. Not a government or migration-advice service.
+            {my ? homePageMy.heroNotice : "Independent community organisation. Not a government or migration-advice service."}
           </p>
         </div>
         <div className="v2-hero-scroll-hint" aria-hidden="true">
@@ -279,18 +282,18 @@ export function PublicSite() {
 
       {/* ── Impact Strip ─────────────────────────────────────── */}
       <section className="v2-impact-strip" aria-label="Community impact numbers">
-        <ImpactStat value={25} suffix="+" label="Years of faith & community" />
-        <ImpactStat value={500} suffix="+" label="Active community members" />
-        <ImpactStat value={50} suffix="+" label="Cultural events per year" />
-        <ImpactStat value={5} label="Languages supported" />
+        <ImpactStat value={25} suffix="+" label={my ? homePageMy.impact[0] : "Years of faith & community"} />
+        <ImpactStat value={500} suffix="+" label={my ? homePageMy.impact[1] : "Active community members"} />
+        <ImpactStat value={50} suffix="+" label={my ? homePageMy.impact[2] : "Cultural events per year"} />
+        <ImpactStat value={5} label={my ? homePageMy.impact[3] : "Languages supported"} />
       </section>
 
       {/* ── Community Stories ─────────────────────────────────── */}
       <section className="v2-stories" id="stories" aria-labelledby="v2-stories-title">
         <div className="v2-stories-header">
-          <p className="v2-section-eyebrow">Community in action</p>
-          <h2 id="v2-stories-title">Stories from our community</h2>
-          <p className="v2-stories-subtitle">Real voices. Shared experiences. Honest storytelling.</p>
+          <p className="v2-section-eyebrow">{my ? homePageMy.storiesEyebrow : "Community in action"}</p>
+          <h2 id="v2-stories-title">{my ? homePageMy.storiesTitle : "Stories from our community"}</h2>
+          <p className="v2-stories-subtitle">{my ? homePageMy.storiesSubtitle : "Real voices. Shared experiences. Honest storytelling."}</p>
         </div>
         <div className="v2-stories-grid">
           {featuredPosts.map((post, index) => {
@@ -320,14 +323,16 @@ export function PublicSite() {
       <section className="v2-mission" aria-label="Mission statement">
         <blockquote>
           <span className="v2-mission-mark" aria-hidden="true">&ldquo;</span>
-          To serve and not to be served — building bridges of faith, culture and belonging across generations.
+          {my
+            ? homePageMy.mission
+            : "To serve and not to be served — building bridges of faith, culture and belonging across generations."}
         </blockquote>
       </section>
 
       {/* ── Support Pathways ─────────────────────────────────── */}
       <section className="v2-pathways" id="support-pathways">
         <div className="v2-pathways-header">
-          <p className="v2-section-eyebrow">Clear starting points</p>
+          <p className="v2-section-eyebrow">{my ? homePageMy.pathwaysEyebrow : "Clear starting points"}</p>
           <h2>{localizedHome.helpTitle}</h2>
           <p>{localizedHome.helpIntro}</p>
         </div>
@@ -365,8 +370,8 @@ export function PublicSite() {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
             <div>
-              <strong>Verified information first</strong>
-              <p>Official services are clearly labelled and open on their own websites.</p>
+              <strong>{my ? homePageMy.trustTitle : "Verified information first"}</strong>
+              <p>{my ? homePageMy.trustBody : "Official services are clearly labelled and open on their own websites."}</p>
             </div>
           </div>
           <div className="v2-trust-links">
@@ -375,14 +380,14 @@ export function PublicSite() {
               target="_blank"
               rel="noreferrer"
             >
-              Australian Government AMEP providers ↗
+              {my ? homePageMy.amepLink : "Australian Government AMEP providers ↗"}
             </a>
             <a
               href="https://www.tisnational.gov.au/"
               target="_blank"
               rel="noreferrer"
             >
-              TIS National language services ↗
+              {my ? homePageMy.tisLink : "TIS National language services ↗"}
             </a>
           </div>
         </div>
@@ -391,11 +396,12 @@ export function PublicSite() {
       {/* ── Programs / What Moves Us ─────────────────────────── */}
       <section className="v2-programs" id="work">
         <div className="v2-programs-header">
-          <p className="v2-section-eyebrow">What moves us</p>
-          <h2>Practical support. Shared responsibility.</h2>
+          <p className="v2-section-eyebrow">{my ? homePageMy.programsEyebrow : "What moves us"}</p>
+          <h2>{my ? homePageMy.programsTitle : "Practical support. Shared responsibility."}</h2>
           <p>
-            People stay at the centre through clear information, partnership
-            and accountable action.
+            {my
+              ? homePageMy.programsBody
+              : "People stay at the centre through clear information, partnership and accountable action."}
           </p>
         </div>
         <div className="v2-programs-grid">
@@ -438,14 +444,14 @@ export function PublicSite() {
                 </svg>
               ),
             },
-          ].map((program) => (
-            <article className={`v2-program-card ${program.accent}`} key={program.title}>
+          ].map((program, index) => (
+            <article className={`v2-program-card ${program.accent}`} key={program.index}>
               <div className="v2-program-icon">{program.icon}</div>
               <span className="v2-program-index">{program.index}</span>
-              <h3>{program.title}</h3>
-              <p>{program.description}</p>
+              <h3>{my ? homePageMy.programs[index].title : program.title}</h3>
+              <p>{my ? homePageMy.programs[index].description : program.description}</p>
               <Link href="/stories" className="v2-program-link">
-                Discover more <span aria-hidden="true">↗</span>
+                {my ? homePageMy.discoverMore : "Discover more"} <span aria-hidden="true">↗</span>
               </Link>
             </article>
           ))}
@@ -456,14 +462,14 @@ export function PublicSite() {
       <section className="v2-join" id="join">
         <div className="v2-join-inner">
           <div className="v2-join-copy">
-            <p className="v2-section-eyebrow">Take part responsibly</p>
-            <h2>Bring your ideas and local knowledge.</h2>
+            <p className="v2-section-eyebrow">{my ? homePageMy.joinEyebrow : "Take part responsibly"}</p>
+            <h2>{my ? homePageMy.joinTitle : "Bring your ideas and local knowledge."}</h2>
           </div>
           <div className="v2-join-actions">
             <Link className="v2-btn v2-btn-gold" href="/get-involved">
               {language === "my" ? chromeMy.getInvolved : "Get involved"} <span aria-hidden="true">↗</span>
             </Link>
-            <p>Public pathways remain subject to organisation approval and verification.</p>
+            <p>{my ? homePageMy.joinNote : "Public pathways remain subject to organisation approval and verification."}</p>
           </div>
         </div>
       </section>
@@ -482,38 +488,38 @@ export function PublicSite() {
           </div>
           <div className="v2-footer-columns">
             <div>
-              <strong>Explore</strong>
-              <Link href="/about">About</Link>
-              <Link href="/our-work">Our work</Link>
-              <Link href="/stories">News & stories</Link>
+              <strong>{my ? homePageMy.footerExplore : "Explore"}</strong>
+              <Link href="/about">{my ? homePageMy.footerAbout : "About"}</Link>
+              <Link href="/our-work">{my ? homePageMy.footerWork : "Our work"}</Link>
+              <Link href="/stories">{my ? homePageMy.footerStories : "News & stories"}</Link>
               <a
                 href="https://web.facebook.com/groups/115394412003293"
                 target="_blank"
                 rel="noreferrer"
               >
-                Official Facebook group ↗
+                {my ? homePageMy.footerFacebook : "Official Facebook group ↗"}
               </a>
             </div>
             <div>
-              <strong>Take part</strong>
-              <Link href="/get-involved">Volunteer</Link>
-              <Link href="/get-involved">Partner with us</Link>
-              <Link href="/get-involved">Contact</Link>
+              <strong>{my ? homePageMy.footerTakePart : "Take part"}</strong>
+              <Link href="/get-involved">{my ? homePageMy.footerVolunteer : "Volunteer"}</Link>
+              <Link href="/get-involved">{my ? homePageMy.footerPartner : "Partner with us"}</Link>
+              <Link href="/get-involved">{my ? homePageMy.footerContact : "Contact"}</Link>
             </div>
             <div>
-              <strong>Official information</strong>
+              <strong>{my ? homePageMy.footerOfficial : "Official information"}</strong>
               <a href="https://immi.homeaffairs.gov.au/" target="_blank" rel="noreferrer">
                 Home Affairs ↗
               </a>
               <a href="https://www.tisnational.gov.au/" target="_blank" rel="noreferrer">
                 TIS National ↗
               </a>
-              <Link href="/approach">Our information boundary</Link>
+              <Link href="/approach">{my ? homePageMy.footerBoundary : "Our information boundary"}</Link>
             </div>
           </div>
           <div className="v2-footer-bottom">
-            <span>Independent community organisation</span>
-            <span>Accessible • Accountable • Community-led</span>
+            <span>{my ? homePageMy.footerIndependent : "Independent community organisation"}</span>
+            <span>{my ? homePageMy.footerValues : "Accessible • Accountable • Community-led"}</span>
           </div>
         </div>
       </footer>

@@ -35,16 +35,16 @@ export function usePublicLanguage() {
 }
 
 export const navLabelsMy: Record<string, string> = {
-  "/": "ပင်မစာမျက်နှာ",
+  "/": "ပင်မ",
   "/about": "အကြောင်း",
-  "/our-work": "ကျွန်ုပ်တို့၏ လုပ်ငန်း",
-  "/giving": "လှူဒါန်းခြင်း",
-  "/certificates": "လက်မှတ်များ",
-  "/stories": "သတင်းနှင့် ဇာတ်လမ်းများ",
+  "/our-work": "လုပ်ငန်း",
+  "/giving": "လှူဒါန်း",
+  "/certificates": "လက်မှတ်",
+  "/stories": "သတင်း",
   "/events": "ပွဲများ",
-  "/gallery": "ဓာတ်ပုံများ",
-  "/approach": "ကျွန်ုပ်တို့၏ နည်းလမ်း",
-  "/get-involved": "ပါဝင်ဆောင်ရွက်ရန်",
+  "/gallery": "ဓာတ်ပုံ",
+  "/approach": "နည်းလမ်း",
+  "/get-involved": "ပါဝင်ရန်",
 };
 
 export function navLabel(href: string, language: PublicLanguage, fallback: string) {
@@ -57,7 +57,7 @@ export const chromeMy = {
   languageHelp: "ဘာသာစကား အကူအညီ ပိုမိုရယူရန်",
   communityLeadership: "အသိုင်းအဝိုင်း ခေါင်းဆောင်မှု",
   findSupport: "အကူအညီ ရှာရန်",
-  getInvolved: "ပါဝင်ဆောင်ရွက်ရန်",
+  getInvolved: "ပါဝင်ရန်",
   readStory: "ဇာတ်လမ်း ဖတ်ရန်",
 };
 

@@ -318,7 +318,7 @@ export function GalleryPage() {
             : "Community members can submit photos through our admin panel. Contact your community leader to contribute."}
         </p>
         <Link href="/get-involved" className="v2-btn v2-btn-gold">
-          {language === "my" ? "ပါဝင်ဆောင်ရွက်ရန်" : "Get Involved"}
+          {language === "my" ? "ပါဝင်ရန်" : "Get Involved"}
         </Link>
       </section>
     </main>

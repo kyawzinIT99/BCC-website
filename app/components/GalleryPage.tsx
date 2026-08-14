@@ -117,7 +117,7 @@ export function GalleryPage() {
     lightbox !== null ? activeAlbum[lightbox.photoIndex] : null;
 
   return (
-    <main className="public-site civic-public-site v2-redesign">
+    <main className="public-site civic-public-site v2-redesign" lang={language === "my" ? "my" : undefined}>
       <PublicHeader
         activeHref="/gallery"
         language={language}

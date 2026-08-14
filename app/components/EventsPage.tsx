@@ -108,7 +108,7 @@ export function EventsPage() {
   ]);
 
   return (
-    <main className="public-site civic-public-site v2-redesign">
+    <main className="public-site civic-public-site v2-redesign" lang={my ? "my" : undefined}>
       <PublicHeader
         activeHref="/events"
         language={language}

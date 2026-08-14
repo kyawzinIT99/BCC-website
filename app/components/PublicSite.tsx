@@ -31,7 +31,7 @@ const copy = {
   },
   my: {
     eyebrow: "ယုံကြည်ခြင်း • ယဉ်ကျေးမှု • အသိုင်းအဝိုင်း",
-    title: "ယုံကြည်ခြင်းတွင် အတူတကွ။ အသိုင်းအဝိုင်းတွင် ပိုမိုခိုင်မာစွာ။",
+    title: "အတူတကွ ယုံကြည်ခြင်း",
     intro:
       "အနောက်ဩစတြေးလျရှိ ဗမာကက်သလစ်အသိုင်းအဝိုင်း၏ ယုံကြည်ခြင်း၊ ယဉ်ကျေးမှုပွဲများ၊ မိသားစုဆက်ဆံရေးနှင့် အသိုင်းအဝိုင်းဇာတ်လမ်းများကို ဂုဏ်ပြုဖော်ပြပါသည်။",
     helpTitle: "ကျွန်ုပ်တို့ မည်သို့ ကူညီပေးနိုင်ပါသနည်း။",
@@ -231,7 +231,7 @@ export function PublicSite() {
     "/story-learning.png",
   ];
   return (
-    <main className="public-site civic-public-site v2-redesign">
+    <main className="public-site civic-public-site v2-redesign" lang={language === "my" ? "my" : undefined}>
       {/* ── Announcement Bar ────────────────────────────────── */}
       <div className="v2-announcement">
         <span className="v2-announcement-dot" />

@@ -7,6 +7,7 @@ import { LogoMark } from "./LogoMark";
 
 export const publicLanguages = [
   { code: "en", label: "English" },
+  { code: "my", label: "မြန်မာ" },
   { code: "ar", label: "Arabic" },
   { code: "fa", label: "Dari" },
   { code: "kar", label: "Karen" },

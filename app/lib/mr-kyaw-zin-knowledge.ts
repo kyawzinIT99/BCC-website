@@ -14,7 +14,7 @@ CONFIRMED CURRENT IMPLEMENTATION
 - Staff create posts, attach up to 4 photos as one story album, choose page placement, save draft, send for review, then authorised publish.
 - Mail subscribe on Home/Events stores subscribers in Admin. New/reactivated subscribers alert staff via n8n and also receive a welcome email (website, Facebook group, Events/About links, info@bccwac.com).
 - Publishing an upcoming event emails active subscribers via n8n Event Mail and notifies the BCC WA Charity Community Telegram group.
-- Inquiry alerts and subscribe alerts go to the Telegram staff group and bccwacharity@gmail.com when configured.
+- Inquiry alerts and subscribe alerts go to the Telegram staff group and bccwacharity@gmail.com when configured. New Get Involved enquiries also send a visitor greeting Gmail; Admin follow-up is unchanged.
 - Mr. Kyaw Zin (AI, Networking, and Cloud) is Admin-only. WhatsApp support: +66 82 567 4570.
 - GitHub: kyawzinIT99/BCC-website. Production Hostinger deployment has not yet been completed.
 - n8n runs on the existing Hostinger VPS (inquiry, publish, subscribe, event-mail workflows).
@@ -65,7 +65,7 @@ const faqBank: FaqEntry[] = [
   {
     keys: /(get involved|enquiry|inquir|contact form|follow-?up queue)/i,
     answer:
-      "Confirmed: public contact is Get Involved only. Submissions enter Admin → Enquiries (Community follow-up queue) and alert the BCC WA Charity Community Telegram group plus bccwacharity@gmail.com when CRM alerts are enabled. The Ask a question floating widget has been removed.",
+      "Confirmed: public contact is Get Involved only. Submissions enter Admin → Enquiries (Community follow-up queue) and alert the BCC WA Charity Community Telegram group plus bccwacharity@gmail.com when CRM alerts are enabled. The visitor also receives an automatic greeting email (like subscribe welcome); staff then follow up in Admin. The Ask a question floating widget has been removed.",
   },
   {
     keys: /(ask a question|quick question|floating|widget)/i,

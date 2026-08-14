@@ -21,12 +21,18 @@ alwaysApply: true
 - Push HTTPS only: `https://github.com/kyawzinIT99/BCC-website.git`.
 
 ## Recently built n8n workflows (already integrated)
-- `BCC Inquiry Alert` (`U1gvYq4WnZvxyMIm`) → `/webhook/bcc-inquiry-alert` (created + status changed + closed; closed includes staff `handledBy` / `closedBy`)
+- `BCC Inquiry Alert` (`U1gvYq4WnZvxyMIm`) → `/webhook/bcc-inquiry-alert` (created + status changed + closed; closed includes staff `handledBy` / `closedBy`). New Get Involved messages also send a visitor greeting Gmail (like subscribe welcome); staff Telegram/Gmail and Admin follow-up are unchanged.
 - `BCC Publish Distribution` (`czx6JcuNWP2unBRv`) → `/webhook/bcc-publish-distribution`
 - `BCC Subscribe Alert` (`JBDK9TqPnYJCkAMn`) → `/webhook/bcc-subscribe-alert` (new/reactivated subscribers → Telegram/Gmail staff alert **and** professional welcome Gmail to the visitor with website, Events, About, Facebook group, and `info@bccwac.com`)
 - `BCC Event Mail` (`bS9NmXubTc9y9Kc0`) → `/webhook/bcc-event-mail` (published upcoming event → Gmail to active subscribers + staff Telegram summary)
 - Staff Telegram alerts use HTML parse mode with a shared layout: `BCC · …` headline, bold name, escaped user text (safer than Markdown for names/emails).
 - Website env in `.dev.vars`: `CRM_ALERTS_ENABLED`, `N8N_INQUIRY_ALERT_WEBHOOK`, `N8N_PUBLISH_WEBHOOK`, `N8N_SUBSCRIBE_ALERT_WEBHOOK`, `N8N_EVENT_MAIL_WEBHOOK`, shared `N8N_INQUIRY_WEBHOOK_SECRET` (never commit).
+
+## Tier 1 scheduled n8n workflows (added Aug 2026)
+- `BCC Enquiry Follow-up Reminder` (`FWwHaDlFEScrwHcN`) — daily at 09:00 Perth (01:00 UTC); calls `/api/n8n/stats`; if any open inquiry is 3+ days old → Telegram nudge to staff chat.
+- `BCC Monthly Summary Report` (`irGFDMqBM4Eyct0c`) — 1st of each month at 00:00 UTC; emails `bccwacharity@gmail.com` with open/stale enquiries, active subscribers, closed-this-month, and last event date.
+- `BCC Subscriber Re-engagement Nudge` (`iR9ee5NYsKWHlHR6`) — every Monday 01:00 UTC; if active subscribers > 0 AND no event published in 30+ days → Telegram nudge to publish an event.
+- All three call `GET https://bccwac.com/api/n8n/stats` with `x-n8n-secret: N8N_INQUIRY_WEBHOOK_SECRET` (n8n env var). Secret must be set on the n8n server environment.
 
 ## Mail subscribe → Admin → n8n → event emails
 - Public form on Home + Events (`MailSubscribe`) posts to `/api/subscribers` with consent.

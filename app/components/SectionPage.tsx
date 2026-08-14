@@ -27,7 +27,6 @@ import { CommunityContactForm } from "./CommunityContactForm";
 import {
   aboutChromeMy,
   extraSectionChromeMy,
-  sectionCopyMy,
   usePublicLanguage,
 } from "../lib/public-language";
 
@@ -53,18 +52,7 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
   const [certificates, setCertificates] = useState<CertificatesContent>(defaultCertificatesContent);
   const [language, setLanguage] = usePublicLanguage();
   const my = language === "my";
-  const overlay = my ? sectionCopyMy[sectionKey] : null;
-  const displayCopy = overlay
-    ? {
-        ...pageCopy,
-        label: overlay.label,
-        eyebrow: overlay.eyebrow,
-        title: overlay.title,
-        summary: overlay.summary,
-        statement: overlay.statement,
-        features: overlay.features,
-      }
-    : pageCopy;
+  const displayCopy = pageCopy;
   const visibleFeatures = sectionKey === "our-work"
     ? displayCopy.features.map((feature) =>
         feature.number === "03" && feature.title === "Community care"
@@ -75,19 +63,7 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
   const aboutMedia = pageMedia || defaultPageMedia.about;
   const workMedia = pageMedia || defaultPageMedia["our-work"];
   const visibleCertificates = certificates.items.filter((item) => item.visible);
-  const aboutDisplay = my
-    ? {
-        ...aboutProfile,
-        historyEyebrow: aboutChromeMy.historyEyebrow,
-        historyTitle: aboutChromeMy.historyTitle,
-        historyBody: aboutChromeMy.historyBody,
-        focusEyebrow: aboutChromeMy.focusEyebrow,
-        focusTitle: aboutChromeMy.focusTitle,
-        focuses: aboutChromeMy.focuses,
-        committeeEyebrow: aboutChromeMy.committeeEyebrow,
-        committeeTitle: aboutChromeMy.committeeTitle,
-      }
-    : aboutProfile;
+  const aboutDisplay = aboutProfile;
   const leadershipLabel = my ? "အသိုင်းအဝိုင်း ခေါင်းဆောင်မှု" : "Community leadership";
 
   useEffect(() => {

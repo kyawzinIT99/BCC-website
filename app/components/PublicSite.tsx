@@ -8,100 +8,9 @@ import {
   type HomePageSettings,
 } from "../lib/home";
 import { LogoMark } from "./LogoMark";
-import {
-  PublicHeader,
-  type PublicLanguage,
-} from "./PublicHeader";
+import { PublicHeader } from "./PublicHeader";
 import { MailSubscribe } from "./MailSubscribe";
 import { chromeMy, usePublicLanguage } from "../lib/public-language";
-
-const copy = {
-  en: {
-    eyebrow: "Faith • Culture • Community",
-    title: "Together in faith. Stronger in community.",
-    intro:
-      "Celebrating Burmese Catholic life in Western Australia through faith, cultural gatherings, family connection and community stories.",
-    helpTitle: "What can we help you with?",
-    routes: [
-      "Learn English",
-      "Find community support",
-      "Support our work",
-      "Learn AI, networking & cloud",
-    ],
-  },
-  my: {
-    eyebrow: "ယုံကြည်ခြင်း • ယဉ်ကျေးမှု • အသိုင်းအဝိုင်း",
-    title: "အတူတကွ ယုံကြည်ခြင်း",
-    intro:
-      "အနောက်ဩစတြေးလျရှိ ဗမာကက်သလစ်အသိုင်းအဝိုင်း၏ ယုံကြည်ခြင်း၊ ယဉ်ကျေးမှုပွဲများ၊ မိသားစုဆက်ဆံရေးနှင့် အသိုင်းအဝိုင်းဇာတ်လမ်းများကို ဂုဏ်ပြုဖော်ပြပါသည်။",
-    helpTitle: "ကျွန်ုပ်တို့ မည်သို့ ကူညီပေးနိုင်ပါသနည်း။",
-    routes: [
-      "အင်္ဂလိပ်စာ သင်ယူရန်",
-      "အသိုင်းအဝိုင်း အကူအညီ ရှာရန်",
-      "ကျွန်ုပ်တို့၏ လုပ်ငန်းကို ထောက်ပံ့ရန်",
-      "AI၊ ကွန်ရက်နှင့် ကလောက်ဒ် သင်ယူရန်",
-    ],
-  },
-  ar: {
-    eyebrow: "للمجتمع • مع المجتمع",
-    title: "ابحث عن الدعم. وابنِ شعوراً بالانتماء.",
-    intro: "مسارات موثوقة لتعلّم الإنجليزية ومعلومات مجتمعية وطرق مسؤولة للمشاركة.",
-    helpTitle: "كيف يمكننا مساعدتك؟",
-    routes: [
-      "تعلّم الإنجليزية",
-      "اعثر على دعم مجتمعي",
-      "ادعم عملنا",
-      "تعلّم الذكاء الاصطناعي والشبكات والسحابة",
-    ],
-  },
-  fa: {
-    eyebrow: "برای جامعه • با جامعه",
-    title: "حمایت پیدا کنید. احساس تعلق بسازید.",
-    intro: "مسیرهای معتبر آموزش انگلیسی، اطلاعات اجتماعی و راه‌های مسئولانه برای مشارکت.",
-    helpTitle: "چگونه می‌توانیم کمک کنیم؟",
-    routes: [
-      "یادگیری انگلیسی",
-      "یافتن حمایت اجتماعی",
-      "حمایت از کار ما",
-      "یادگیری هوش مصنوعی، شبکه و رایانش ابری",
-    ],
-  },
-  kar: {
-    eyebrow: "Faith • Culture • Community",
-    title: "Together in faith. Stronger in community.",
-    intro:
-      "Celebrating Burmese Catholic life in Western Australia through faith, cultural gatherings, family connection and community stories.",
-    helpTitle: "How can we help?",
-    routes: [
-      "Learn English",
-      "Find local support",
-      "Take part",
-      "Learn AI, networking & cloud",
-    ],
-  },
-  vi: {
-    eyebrow: "Vì cộng đồng • Cùng cộng đồng",
-    title: "Tìm hỗ trợ. Xây dựng sự gắn kết.",
-    intro:
-      "Lộ trình học tiếng Anh đáng tin cậy, thông tin cộng đồng và cách tham gia phù hợp.",
-    helpTitle: "Chúng tôi có thể giúp gì?",
-    routes: [
-      "Học tiếng Anh",
-      "Tìm hỗ trợ cộng đồng",
-      "Hỗ trợ công việc của chúng tôi",
-      "Học AI, mạng và điện toán đám mây",
-    ],
-  },
-} satisfies Record<
-  PublicLanguage,
-  {
-    eyebrow: string;
-    title: string;
-    intro: string;
-    helpTitle: string;
-    routes: [string, string, string, string];
-  }
->;
 
 /* ── Animated counter hook ────────────────────────────────────────── */
 function useCounter(target: number, duration = 2000) {
@@ -190,7 +99,6 @@ export function PublicSite() {
   const [language, setLanguage] = usePublicLanguage();
   const [home, setHome] = useState<HomePageSettings>(defaultHomePage);
   const [posts, setPosts] = useState(seedPosts);
-  const pageCopy = copy[language];
 
   useEffect(() => {
     fetch("/api/home")
@@ -209,20 +117,6 @@ export function PublicSite() {
       })
       .catch(() => undefined);
   }, []);
-
-  const localizedHome = language === "en"
-    ? home
-    : {
-        ...home,
-        eyebrow: pageCopy.eyebrow,
-        title: pageCopy.title,
-        intro: pageCopy.intro,
-        helpTitle: pageCopy.helpTitle,
-        pathways: home.pathways.map((pathway, index) => ({
-          ...pathway,
-          title: pageCopy.routes[index],
-        })) as HomePageSettings["pathways"],
-      };
 
   const featuredPosts = posts.slice(0, 3);
   const storyImages = [
@@ -253,13 +147,13 @@ export function PublicSite() {
       >
         <div className="v2-hero-bg">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={localizedHome.heroImageUrl} alt={localizedHome.heroImageAlt} />
+          <img src={home.heroImageUrl} alt={home.heroImageAlt} />
           <div className="v2-hero-overlay" />
         </div>
         <div className="v2-hero-content">
-          <p className="v2-hero-eyebrow">{localizedHome.eyebrow}</p>
-          <h1 className="v2-hero-title">{localizedHome.title}</h1>
-          <p className="v2-hero-intro">{localizedHome.intro}</p>
+          <p className="v2-hero-eyebrow">{home.eyebrow}</p>
+          <h1 className="v2-hero-title">{home.title}</h1>
+          <p className="v2-hero-intro">{home.intro}</p>
           <div className="v2-hero-actions">
             <a className="v2-btn v2-btn-gold" href="#support-pathways">
               {language === "my" ? chromeMy.findSupport : "Find support"}
@@ -328,11 +222,11 @@ export function PublicSite() {
       <section className="v2-pathways" id="support-pathways">
         <div className="v2-pathways-header">
           <p className="v2-section-eyebrow">Clear starting points</p>
-          <h2>{localizedHome.helpTitle}</h2>
-          <p>{localizedHome.helpIntro}</p>
+          <h2>{home.helpTitle}</h2>
+          <p>{home.helpIntro}</p>
         </div>
         <div className="v2-pathways-grid">
-          {localizedHome.pathways.map((pathway, index) => {
+          {home.pathways.map((pathway, index) => {
             if (!pathway.visible) return null;
             const external = pathway.href.startsWith("https://");
             const accentClasses = ["v2-pw-gold", "v2-pw-sky", "v2-pw-coral", "v2-pw-navy"];

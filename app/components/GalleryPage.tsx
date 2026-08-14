@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { PublicHeader, type PublicLanguage } from "./PublicHeader";
+import { PublicHeader } from "./PublicHeader";
+import { galleryCopyMy, usePublicLanguage } from "../lib/public-language";
 
 type GalleryItem = {
   id: number;
@@ -24,7 +25,7 @@ type GalleryPost = {
 };
 
 export function GalleryPage() {
-  const [language, setLanguage] = useState<PublicLanguage>("en");
+  const [language, setLanguage] = usePublicLanguage();
   const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [filter, setFilter] = useState<string>("all");
   const [lightbox, setLightbox] = useState<{
@@ -125,11 +126,14 @@ export function GalleryPage() {
 
       <section className="v2-gallery-hero">
         <div className="v2-gallery-hero-content">
-          <p className="v2-section-eyebrow">Community gallery</p>
-          <h1>Moments That Matter</h1>
+          <p className="v2-section-eyebrow">
+            {language === "my" ? galleryCopyMy.eyebrow : "Community gallery"}
+          </p>
+          <h1>{language === "my" ? galleryCopyMy.title : "Moments That Matter"}</h1>
           <p className="v2-gallery-subtitle">
-            Each card is one approved story album — up to four photos stay
-            together with their context, not scattered across the site.
+            {language === "my"
+              ? galleryCopyMy.subtitle
+              : "Each card is one approved story album — up to four photos stay together with their context, not scattered across the site."}
           </p>
         </div>
       </section>
@@ -143,11 +147,11 @@ export function GalleryPage() {
             }`}
             onClick={() => setFilter(cat)}
           >
-            {cat === "all" ? "All albums" : cat}
+            {cat === "all" ? (language === "my" ? galleryCopyMy.allAlbums : "All albums") : cat}
           </button>
         ))}
         <span className="v2-gallery-count">
-          {filtered.length} album{filtered.length !== 1 ? "s" : ""}
+          {filtered.length} {language === "my" ? galleryCopyMy.albums : `album${filtered.length !== 1 ? "s" : ""}`}
         </span>
       </div>
 
@@ -155,8 +159,9 @@ export function GalleryPage() {
         {filtered.length === 0 ? (
           <div className="v2-gallery-empty">
             <p>
-              No photos yet. Publish a story with photos in the admin panel to
-              see albums here.
+              {language === "my"
+                ? galleryCopyMy.empty
+                : "No photos yet. Publish a story with photos in the admin panel to see albums here."}
             </p>
           </div>
         ) : (
@@ -185,7 +190,7 @@ export function GalleryPage() {
                     </div>
                     {album.length > 1 ? (
                       <span className="v2-gallery-count-badge">
-                        {album.length} photos
+                        {album.length} {language === "my" ? galleryCopyMy.photos : "photos"}
                       </span>
                     ) : null}
                   </div>
@@ -306,13 +311,14 @@ export function GalleryPage() {
       )}
 
       <section className="v2-gallery-cta">
-        <h2>Have photos to share?</h2>
+        <h2>{language === "my" ? galleryCopyMy.ctaTitle : "Have photos to share?"}</h2>
         <p>
-          Community members can submit photos through our admin panel. Contact
-          your community leader to contribute.
+          {language === "my"
+            ? galleryCopyMy.ctaBody
+            : "Community members can submit photos through our admin panel. Contact your community leader to contribute."}
         </p>
         <Link href="/get-involved" className="v2-btn v2-btn-gold">
-          Get Involved
+          {language === "my" ? "ပါဝင်ဆောင်ရွက်ရန်" : "Get Involved"}
         </Link>
       </section>
     </main>

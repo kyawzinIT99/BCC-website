@@ -13,6 +13,7 @@ import {
   type PublicLanguage,
 } from "./PublicHeader";
 import { MailSubscribe } from "./MailSubscribe";
+import { chromeMy, usePublicLanguage } from "../lib/public-language";
 
 const copy = {
   en: {
@@ -186,7 +187,7 @@ const pathwayIcons = [
 ];
 
 export function PublicSite() {
-  const [language, setLanguage] = useState<PublicLanguage>("en");
+  const [language, setLanguage] = usePublicLanguage();
   const [home, setHome] = useState<HomePageSettings>(defaultHomePage);
   const [posts, setPosts] = useState(seedPosts);
   const pageCopy = copy[language];
@@ -261,10 +262,10 @@ export function PublicSite() {
           <p className="v2-hero-intro">{localizedHome.intro}</p>
           <div className="v2-hero-actions">
             <a className="v2-btn v2-btn-gold" href="#support-pathways">
-              Find support
+              {language === "my" ? chromeMy.findSupport : "Find support"}
             </a>
             <Link className="v2-btn v2-btn-outline" href="/get-involved">
-              Get involved
+              {language === "my" ? chromeMy.getInvolved : "Get involved"}
             </Link>
           </div>
           <p className="v2-hero-notice">
@@ -306,7 +307,7 @@ export function PublicSite() {
                   <h3>{post.title}</h3>
                   <p>{post.excerpt}</p>
                   <Link href="/stories" className="v2-story-link">
-                    Read story <span aria-hidden="true">→</span>
+                    {language === "my" ? chromeMy.readStory : "Read story"} <span aria-hidden="true">→</span>
                   </Link>
                 </div>
               </article>
@@ -460,7 +461,7 @@ export function PublicSite() {
           </div>
           <div className="v2-join-actions">
             <Link className="v2-btn v2-btn-gold" href="/get-involved">
-              Get involved <span aria-hidden="true">↗</span>
+              {language === "my" ? chromeMy.getInvolved : "Get involved"} <span aria-hidden="true">↗</span>
             </Link>
             <p>Public pathways remain subject to organisation approval and verification.</p>
           </div>

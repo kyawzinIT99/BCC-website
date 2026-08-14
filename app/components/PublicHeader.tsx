@@ -2,19 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
+import { chromeMy, navLabel, publicLanguages, type PublicLanguage } from "../lib/public-language";
 import { publicNavigation } from "../lib/sections";
 import { LogoMark } from "./LogoMark";
 
-export const publicLanguages = [
-  { code: "en", label: "English" },
-  { code: "my", label: "မြန်မာ" },
-  { code: "ar", label: "Arabic" },
-  { code: "fa", label: "Dari" },
-  { code: "kar", label: "Karen" },
-  { code: "vi", label: "Vietnamese" },
-] as const;
-
-export type PublicLanguage = (typeof publicLanguages)[number]["code"];
+export { publicLanguages, type PublicLanguage };
 
 const primaryHrefs = new Set([
   "/about",
@@ -115,7 +107,7 @@ export function PublicHeader({
                 className={active ? "active" : undefined}
                 aria-current={active ? "page" : undefined}
               >
-                {item.label}
+                {navLabel(item.href, language, item.label)}
               </Link>
             );
           })}
@@ -133,7 +125,7 @@ export function PublicHeader({
                   setLanguageOpen(false);
                 }}
               >
-                More
+                {language === "my" ? chromeMy.more : "More"}
                 <span className="bcc-menubar-caret" aria-hidden="true" />
               </button>
               {moreOpen && (
@@ -149,7 +141,7 @@ export function PublicHeader({
                         aria-current={active ? "page" : undefined}
                         onClick={() => setMoreOpen(false)}
                       >
-                        {item.label}
+                        {navLabel(item.href, language, item.label)}
                       </Link>
                     );
                   })}
@@ -193,7 +185,7 @@ export function PublicHeader({
                   </button>
                 ))}
                 <a href="https://www.tisnational.gov.au/" target="_blank" rel="noreferrer">
-                  More language help
+                  {language === "my" ? chromeMy.languageHelp : "More language help"}
                 </a>
               </div>
             )}
@@ -201,7 +193,7 @@ export function PublicHeader({
 
           {cta && (
             <Link className="public-cta bcc-menubar-cta" href={cta.href}>
-              {cta.label}
+              {navLabel(cta.href, language, cta.label)}
             </Link>
           )}
 
@@ -241,7 +233,7 @@ export function PublicHeader({
                     aria-current={active ? "page" : undefined}
                     onClick={() => setMobileOpen(false)}
                   >
-                    {item.label}
+                    {navLabel(item.href, language, item.label)}
                   </Link>
                 );
               })}
@@ -251,7 +243,7 @@ export function PublicHeader({
                 href={cta.href}
                 onClick={() => setMobileOpen(false)}
               >
-                {cta.label}
+                {navLabel(cta.href, language, cta.label)}
               </Link>
             )}
           </nav>

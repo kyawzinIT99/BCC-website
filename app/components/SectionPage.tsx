@@ -22,15 +22,21 @@ import {
 } from "../lib/page-media";
 import { sectionDefinitions, type SectionKey } from "../lib/sections";
 import { LogoMark } from "./LogoMark";
-import { PublicHeader, type PublicLanguage } from "./PublicHeader";
+import { PublicHeader } from "./PublicHeader";
 import { CommunityContactForm } from "./CommunityContactForm";
+import {
+  aboutChromeMy,
+  extraSectionChromeMy,
+  sectionCopyMy,
+  usePublicLanguage,
+} from "../lib/public-language";
 
-function CommitteeCard({ member }: { member: CommitteeMember }) {
+function CommitteeCard({ member, leadershipLabel }: { member: CommitteeMember; leadershipLabel: string }) {
   return (
     <article className="committee-card">
       <span>{member.role}</span>
       <h3>{member.name}</h3>
-      <small>Community leadership</small>
+      <small>{leadershipLabel}</small>
     </article>
   );
 }
@@ -45,17 +51,44 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
   );
   const [giving, setGiving] = useState<GivingContent>(defaultGivingContent);
   const [certificates, setCertificates] = useState<CertificatesContent>(defaultCertificatesContent);
-  const [language, setLanguage] = useState<PublicLanguage>("en");
+  const [language, setLanguage] = usePublicLanguage();
+  const my = language === "my";
+  const overlay = my ? sectionCopyMy[sectionKey] : null;
+  const displayCopy = overlay
+    ? {
+        ...pageCopy,
+        label: overlay.label,
+        eyebrow: overlay.eyebrow,
+        title: overlay.title,
+        summary: overlay.summary,
+        statement: overlay.statement,
+        features: overlay.features,
+      }
+    : pageCopy;
   const visibleFeatures = sectionKey === "our-work"
-    ? pageCopy.features.map((feature) =>
+    ? displayCopy.features.map((feature) =>
         feature.number === "03" && feature.title === "Community care"
           ? sectionDefinitions["our-work"].features[2]
           : feature,
       )
-    : pageCopy.features;
+    : displayCopy.features;
   const aboutMedia = pageMedia || defaultPageMedia.about;
   const workMedia = pageMedia || defaultPageMedia["our-work"];
   const visibleCertificates = certificates.items.filter((item) => item.visible);
+  const aboutDisplay = my
+    ? {
+        ...aboutProfile,
+        historyEyebrow: aboutChromeMy.historyEyebrow,
+        historyTitle: aboutChromeMy.historyTitle,
+        historyBody: aboutChromeMy.historyBody,
+        focusEyebrow: aboutChromeMy.focusEyebrow,
+        focusTitle: aboutChromeMy.focusTitle,
+        focuses: aboutChromeMy.focuses,
+        committeeEyebrow: aboutChromeMy.committeeEyebrow,
+        committeeTitle: aboutChromeMy.committeeTitle,
+      }
+    : aboutProfile;
+  const leadershipLabel = my ? "အသိုင်းအဝိုင်း ခေါင်းဆောင်မှု" : "Community leadership";
 
   useEffect(() => {
     if (sectionKey !== "stories") {
@@ -100,7 +133,7 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
   }, [section, sectionKey]);
 
   return (
-    <main className={`section-page section-${sectionKey}`}>
+    <main className={`section-page section-${sectionKey}`} lang={my ? "my" : undefined}>
       <PublicHeader
         activeHref={`/${sectionKey}`}
         language={language}
@@ -122,23 +155,27 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
                 fetchPriority="high"
                 decoding="async"
               />
-              <figcaption>Community photo · Burmese Catholic Community of WA</figcaption>
+              <figcaption>
+                {my
+                  ? aboutChromeMy.communityPhoto
+                  : "Community photo · Burmese Catholic Community of WA"}
+              </figcaption>
             </figure>
             <div className="section-about-copy">
               <p className="section-about-kicker">
                 <span aria-hidden="true">01</span>
-                {pageCopy.eyebrow}
+                {displayCopy.eyebrow}
               </p>
-              <h1 className="sr-only">{pageCopy.title}</h1>
-              <p className="section-lead">{pageCopy.summary}</p>
+              <h1 className="sr-only">{displayCopy.title}</h1>
+              <p className="section-lead">{displayCopy.summary}</p>
             </div>
           </>
         ) : sectionKey === "our-work" ? (
           <>
             <div className="section-work-copy">
-              <p className="eyebrow">{pageCopy.eyebrow}</p>
-              <h1>{pageCopy.title}</h1>
-              <p className="section-lead">{pageCopy.summary}</p>
+              <p className="eyebrow">{displayCopy.eyebrow}</p>
+              <h1>{displayCopy.title}</h1>
+              <p className="section-lead">{displayCopy.summary}</p>
             </div>
             <figure className="section-work-photo">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -148,18 +185,22 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
                 loading="eager"
                 fetchPriority="high"
               />
-              <figcaption>Faith, culture and community in Western Australia</figcaption>
+              <figcaption>
+                {my
+                  ? extraSectionChromeMy.workPhotoCaption
+                  : "Faith, culture and community in Western Australia"}
+              </figcaption>
             </figure>
           </>
         ) : (
           <>
             <div>
-              <p className="eyebrow">{pageCopy.eyebrow}</p>
-              <h1>{pageCopy.title}</h1>
-              <p className="section-lead">{pageCopy.summary}</p>
+              <p className="eyebrow">{displayCopy.eyebrow}</p>
+              <h1>{displayCopy.title}</h1>
+              <p className="section-lead">{displayCopy.summary}</p>
             </div>
             <div className="section-emblem" aria-hidden="true">
-              <span>{section.label}</span>
+              <span>{displayCopy.label}</span>
               <i />
               <b>AU</b>
             </div>
@@ -168,14 +209,14 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
       </section>
 
       <section className="section-statement">
-        <p>{pageCopy.statement}</p>
+        <p>{displayCopy.statement}</p>
       </section>
 
       {sectionKey === "giving" && giving.showAmounts ? (
         <section className="giving-totals" aria-labelledby="giving-totals-title">
           <div className="giving-totals-intro">
-            <p className="eyebrow">Published figures · Australian Dollars (AUD)</p>
-            <h2 id="giving-totals-title">Donation amount and yearly total</h2>
+            <p className="eyebrow">{my ? extraSectionChromeMy.givingEyebrow : "Published figures · Australian Dollars (AUD)"}</p>
+            <h2 id="giving-totals-title">{my ? extraSectionChromeMy.givingTitle : "Donation amount and yearly total"}</h2>
             <p>{giving.note}</p>
             <small>{giving.updatedLabel}</small>
           </div>
@@ -190,10 +231,10 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
             </article>
           </div>
           <div className="giving-howto">
-            <h3>How to give</h3>
+            <h3>{my ? extraSectionChromeMy.howToGive : "How to give"}</h3>
             <p>{giving.howToGive}</p>
             <Link className="button button-dark" href="/get-involved#community-contact">
-              Contact through Get Involved
+              {my ? extraSectionChromeMy.contactGetInvolved : "Contact through Get Involved"}
             </Link>
           </div>
         </section>
@@ -202,8 +243,8 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
       {sectionKey === "certificates" ? (
         <section className="certificates-gallery" aria-labelledby="certificates-gallery-title">
           <div className="certificates-gallery-intro">
-            <p className="eyebrow">Public record</p>
-            <h2 id="certificates-gallery-title">Certificates</h2>
+            <p className="eyebrow">{my ? extraSectionChromeMy.certificatesEyebrow : "Public record"}</p>
+            <h2 id="certificates-gallery-title">{my ? extraSectionChromeMy.certificatesTitle : "Certificates"}</h2>
             <p>{certificates.galleryIntro}</p>
           </div>
           {visibleCertificates.length ? (
@@ -230,8 +271,12 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
             </div>
           ) : (
             <div className="section-empty">
-              <span>COMING INTO VIEW</span>
-              <p>Approved certificates will appear here after administrators publish them.</p>
+              <span>{my ? extraSectionChromeMy.comingIntoView : "COMING INTO VIEW"}</span>
+              <p>
+                {my
+                  ? extraSectionChromeMy.certificatesEmpty
+                  : "Approved certificates will appear here after administrators publish them."}
+              </p>
             </div>
           )}
         </section>
@@ -240,17 +285,23 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
       {sectionKey === "stories" && (
         <section className="story-feed-boundary" aria-labelledby="story-feed-boundary-title">
           <div>
-            <p className="eyebrow">A clear content boundary</p>
-            <h2 id="story-feed-boundary-title">This is the changing news and stories feed.</h2>
+            <p className="eyebrow">{my ? extraSectionChromeMy.storiesBoundaryEyebrow : "A clear content boundary"}</p>
+            <h2 id="story-feed-boundary-title">
+              {my
+                ? extraSectionChromeMy.storiesBoundaryTitle
+                : "This is the changing news and stories feed."}
+            </h2>
           </div>
           <div>
             <p>
-              Recent photographs, announcements and recaps appear here after administrator review.
-              The permanent explanation of the organisation&apos;s service remains on Our Work.
-              Any fundraising appeal must state its date, authorised beneficiary, collection method,
-              closing date and reporting commitment. Payment details appear only after organisation approval.
+              {my
+                ? extraSectionChromeMy.storiesBoundaryBody
+                : "Recent photographs, announcements and recaps appear here after administrator review. The permanent explanation of the organisation's service remains on Our Work. Any fundraising appeal must state its date, authorised beneficiary, collection method, closing date and reporting commitment. Payment details appear only after organisation approval."}
             </p>
-            <Link href="/our-work">Read about Our Work <span aria-hidden="true">→</span></Link>
+            <Link href="/our-work">
+              {my ? extraSectionChromeMy.readOurWork : "Read about Our Work"}{" "}
+              <span aria-hidden="true">→</span>
+            </Link>
           </div>
         </section>
       )}
@@ -258,22 +309,25 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
       {sectionKey === "stories" && (
         <section className="facebook-community-panel" aria-labelledby="facebook-community-title">
           <div>
-            <p className="eyebrow">Official community channel</p>
-            <h2 id="facebook-community-title">See community life as it happens.</h2>
+            <p className="eyebrow">{my ? extraSectionChromeMy.facebookEyebrow : "Official community channel"}</p>
+            <h2 id="facebook-community-title">
+              {my ? extraSectionChromeMy.facebookTitle : "See community life as it happens."}
+            </h2>
           </div>
           <div className="facebook-community-action">
             <p>
-              Visit the official Burmese Catholic Community of Western Australia
-              Facebook group for current conversations and activity updates.
+              {my
+                ? extraSectionChromeMy.facebookBody
+                : "Visit the official Burmese Catholic Community of Western Australia Facebook group for current conversations and activity updates."}
             </p>
             <a
               href="https://web.facebook.com/groups/115394412003293"
               target="_blank"
               rel="noreferrer"
             >
-              Visit the official Facebook group <span aria-hidden="true">↗</span>
+              {my ? extraSectionChromeMy.facebookLink : "Visit the official Facebook group"} <span aria-hidden="true">↗</span>
             </a>
-            <small>Facebook may require visitors to sign in.</small>
+            <small>{my ? extraSectionChromeMy.facebookNote : "Facebook may require visitors to sign in."}</small>
           </div>
         </section>
       )}
@@ -301,17 +355,24 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
       {sectionKey === "our-work" && (
         <section className="work-updates-route" aria-labelledby="work-updates-title">
           <div>
-            <p className="eyebrow">Looking for current activity?</p>
-            <h2 id="work-updates-title">Our Work explains what we do. News &amp; Stories shows what is happening now.</h2>
+            <p className="eyebrow">{my ? extraSectionChromeMy.workUpdatesEyebrow : "Looking for current activity?"}</p>
+            <h2 id="work-updates-title">
+              {my
+                ? extraSectionChromeMy.workUpdatesTitle
+                : "Our Work explains what we do. News & Stories shows what is happening now."}
+            </h2>
           </div>
           <div>
             <p>
-              Recent photographs, announcements and community updates belong in one clear feed,
-              separate from this permanent overview of faith, culture and community care.
+              {my
+                ? extraSectionChromeMy.workUpdatesBody
+                : "Recent photographs, announcements and community updates belong in one clear feed, separate from this permanent overview of faith, culture and community care."}
             </p>
-            <Link className="button button-dark" href="/stories">View News &amp; Stories</Link>
+            <Link className="button button-dark" href="/stories">
+              {my ? extraSectionChromeMy.viewStories : "View News & Stories"}
+            </Link>
             <a href="https://web.facebook.com/groups/115394412003293" target="_blank" rel="noreferrer">
-              Visit the official Facebook group <span aria-hidden="true">↗</span>
+              {my ? extraSectionChromeMy.facebookLink : "Visit the official Facebook group"} <span aria-hidden="true">↗</span>
             </a>
           </div>
         </section>
@@ -322,31 +383,31 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
           <section className="bcc-history" aria-labelledby="bcc-history-title">
             <div className="bcc-history-intro">
               <div>
-                <p className="eyebrow">{aboutProfile.historyEyebrow}</p>
-                <h2 id="bcc-history-title">{aboutProfile.historyTitle}</h2>
+                <p className="eyebrow">{aboutDisplay.historyEyebrow}</p>
+                <h2 id="bcc-history-title">{aboutDisplay.historyTitle}</h2>
               </div>
               <div className="bcc-history-copy">
-                {aboutProfile.historyBody.split(/\n\n+/).map((paragraph, index) => (
+                {aboutDisplay.historyBody.split(/\n\n+/).map((paragraph, index) => (
                   <p key={index}>{paragraph}</p>
                 ))}
               </div>
             </div>
 
             <div className="bcc-facts" aria-label="Organisation facts">
-              <article><span>Formed</span><strong>{aboutProfile.formed}</strong></article>
-              <article><span>Incorporated</span><strong>{aboutProfile.incorporated}</strong></article>
-              <article><span>Registered name</span><strong>{aboutProfile.legalName}</strong></article>
+              <article><span>{my ? aboutChromeMy.formed : "Formed"}</span><strong>{aboutProfile.formed}</strong></article>
+              <article><span>{my ? aboutChromeMy.incorporated : "Incorporated"}</span><strong>{aboutProfile.incorporated}</strong></article>
+              <article><span>{my ? aboutChromeMy.registeredName : "Registered name"}</span><strong>{aboutProfile.legalName}</strong></article>
               <article><span>ABN</span><strong>{aboutProfile.abn}</strong></article>
             </div>
           </section>
 
           <section className="bcc-ministries" aria-labelledby="bcc-ministries-title">
             <div className="bcc-section-heading">
-              <p className="eyebrow">{aboutProfile.focusEyebrow}</p>
-              <h2 id="bcc-ministries-title">{aboutProfile.focusTitle}</h2>
+              <p className="eyebrow">{aboutDisplay.focusEyebrow}</p>
+              <h2 id="bcc-ministries-title">{aboutDisplay.focusTitle}</h2>
             </div>
             <div className="bcc-ministry-grid">
-              {aboutProfile.focuses.map((focus, index) => (
+              {aboutDisplay.focuses.map((focus, index) => (
                 <article key={`${index}-${focus.title}`}>
                   <span>{String(index + 1).padStart(2, "0")}</span>
                   <h3>{focus.title}</h3>
@@ -359,29 +420,30 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
           <section className="bcc-committee" id="committee" aria-labelledby="bcc-committee-title">
             <div className="bcc-section-heading committee-heading">
               <div>
-                <p className="eyebrow">{aboutProfile.committeeEyebrow}</p>
-                <h2 id="bcc-committee-title">{aboutProfile.committeeTitle}</h2>
+                <p className="eyebrow">{aboutDisplay.committeeEyebrow}</p>
+                <h2 id="bcc-committee-title">{aboutDisplay.committeeTitle}</h2>
               </div>
               <p>
-                Meet the people entrusted with serving the community. For privacy,
-                personal contact details are not published. Updated {aboutProfile.committeeUpdated}.
+                {my
+                  ? `${aboutChromeMy.committeeIntro} ${aboutChromeMy.updated} ${aboutProfile.committeeUpdated}.`
+                  : `Meet the people entrusted with serving the community. For privacy, personal contact details are not published. Updated ${aboutProfile.committeeUpdated}.`}
               </p>
             </div>
 
             <div className="committee-grid">
               {aboutProfile.committee.slice(0, 11).map((member) => (
-                <CommitteeCard member={member} key={member.name} />
+                <CommitteeCard member={member} key={member.name} leadershipLabel={leadershipLabel} />
               ))}
             </div>
 
             <details className="executive-directory">
               <summary>
-                View all {aboutProfile.committee.slice(11).length} executive committee members
+                {my ? `${aboutChromeMy.viewAll} ${aboutProfile.committee.slice(11).length}` : `View all ${aboutProfile.committee.slice(11).length} executive committee members`}
                 <span aria-hidden="true">+</span>
               </summary>
               <div className="committee-grid">
                 {aboutProfile.committee.slice(11).map((member) => (
-                  <CommitteeCard member={member} key={member.name} />
+                  <CommitteeCard member={member} key={member.name} leadershipLabel={leadershipLabel} />
                 ))}
               </div>
             </details>
@@ -389,18 +451,23 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
 
           <section className="bcc-contact" aria-labelledby="bcc-contact-title">
             <div>
-              <p className="eyebrow">Contact the community</p>
-              <h2 id="bcc-contact-title">One private starting point.</h2>
+              <p className="eyebrow">{my ? aboutChromeMy.contactEyebrow : "Contact the community"}</p>
+              <h2 id="bcc-contact-title">{my ? aboutChromeMy.contactTitle : "One private starting point."}</h2>
             </div>
             <div className="bcc-contact-action">
               <p>
-                Send your enquiry through the secure community form. An authorised
-                administrator can direct it to the appropriate committee member.
+                {my
+                  ? aboutChromeMy.contactBody
+                  : "Send your enquiry through the secure community form. An authorised administrator can direct it to the appropriate committee member."}
               </p>
               <Link className="button button-light" href="/get-involved#community-contact">
-                Contact the community
+                {my ? aboutChromeMy.contactButton : "Contact the community"}
               </Link>
-              <small>Messages are recorded privately for responsible follow-up.</small>
+              <small>
+                {my
+                  ? aboutChromeMy.contactNote
+                  : "Messages are recorded privately for responsible follow-up."}
+              </small>
             </div>
           </section>
 
@@ -413,8 +480,8 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
       {sectionKey === "stories" && (
         <section className="section-published">
           <div className="section-published-heading">
-            <p className="eyebrow">Recent approved updates</p>
-            <h2>News &amp; Stories feed</h2>
+            <p className="eyebrow">{my ? extraSectionChromeMy.recentUpdates : "Recent approved updates"}</p>
+            <h2>{my ? extraSectionChromeMy.storiesFeed : "News & Stories feed"}</h2>
           </div>
           {posts.length ? (
           <div className="section-published-grid">
@@ -472,8 +539,12 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
           </div>
           ) : (
             <div className="section-empty">
-              <span>COMING INTO VIEW</span>
-              <p>Approved public updates for this section will appear here.</p>
+              <span>{my ? extraSectionChromeMy.comingIntoView : "COMING INTO VIEW"}</span>
+              <p>
+                {my
+                  ? extraSectionChromeMy.storiesEmpty
+                  : "Approved public updates for this section will appear here."}
+              </p>
             </div>
           )}
         </section>
@@ -486,7 +557,11 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
           <LogoMark />
           <span>BURMESE CATHOLIC COMMUNITY WA</span>
         </Link>
-        <p>Australian community action with a clear public purpose.</p>
+        <p>
+          {my
+            ? extraSectionChromeMy.footerNote
+            : "Australian community action with a clear public purpose."}
+        </p>
       </footer>
     </main>
   );

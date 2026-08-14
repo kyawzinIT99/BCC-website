@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { PublicHeader, type PublicLanguage } from "./PublicHeader";
+import { PublicHeader } from "./PublicHeader";
 import { MailSubscribe } from "./MailSubscribe";
+import { eventsCopyMy, usePublicLanguage } from "../lib/public-language";
 
 type CommunityEvent = {
   id: number;
@@ -62,7 +63,7 @@ function formatDate(dateStr: string) {
 
 
 export function EventsPage() {
-  const [language, setLanguage] = useState<PublicLanguage>("en");
+  const [language, setLanguage] = usePublicLanguage();
   const [filter, setFilter] = useState<string>("all");
   const [showPast, setShowPast] = useState(false);
   const [communityEvents, setCommunityEvents] = useState<CommunityEvent[]>(seedEvents);
@@ -100,7 +101,11 @@ export function EventsPage() {
       ? displayEvents
       : displayEvents.filter((e) => e.category === filter);
 
-  const allCategories = Object.entries(categoryLabels);
+  const my = language === "my";
+  const allCategories = Object.entries(categoryLabels).map(([key, label]) => [
+    key,
+    my ? eventsCopyMy.categories[key] || label : label,
+  ]);
 
   return (
     <main className="public-site civic-public-site v2-redesign">
@@ -113,11 +118,12 @@ export function EventsPage() {
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="v2-events-hero">
         <div className="v2-events-hero-content">
-          <p className="v2-section-eyebrow">Community calendar</p>
-          <h1>Upcoming Events</h1>
+          <p className="v2-section-eyebrow">{my ? eventsCopyMy.eyebrow : "Community calendar"}</p>
+          <h1>{my ? eventsCopyMy.title : "Upcoming Events"}</h1>
           <p className="v2-events-subtitle">
-            Join us at Mass, cultural celebrations, service missions, and youth
-            gatherings across Western Australia.
+            {my
+              ? eventsCopyMy.subtitle
+              : "Join us at Mass, cultural celebrations, service missions, and youth gatherings across Western Australia."}
           </p>
         </div>
       </section>
@@ -129,13 +135,13 @@ export function EventsPage() {
             className={!showPast ? "active" : ""}
             onClick={() => setShowPast(false)}
           >
-            Upcoming
+            {my ? eventsCopyMy.upcoming : "Upcoming"}
           </button>
           <button
             className={showPast ? "active" : ""}
             onClick={() => setShowPast(true)}
           >
-            Past Events
+            {my ? eventsCopyMy.past : "Past Events"}
           </button>
         </div>
         <div className="v2-events-filters">
@@ -144,7 +150,7 @@ export function EventsPage() {
               }`}
             onClick={() => setFilter("all")}
           >
-            All
+            {my ? eventsCopyMy.all : "All"}
           </button>
           {allCategories.map(([key, label]) => (
             <button
@@ -178,8 +184,8 @@ export function EventsPage() {
           <div className="v2-events-empty">
             <p>
               {showPast
-                ? "No past events to show."
-                : "No upcoming events scheduled. Check back soon!"}
+                ? my ? eventsCopyMy.emptyPast : "No past events to show."
+                : my ? eventsCopyMy.emptyUpcoming : "No upcoming events scheduled. Check back soon!"}
             </p>
           </div>
         ) : (
@@ -211,10 +217,10 @@ export function EventsPage() {
                               : "white",
                         }}
                       >
-                        {categoryLabels[event.category]}
+                        {my ? eventsCopyMy.categories[event.category] || categoryLabels[event.category] : categoryLabels[event.category]}
                       </span>
                       {event.recurring && (
-                        <span className="v2-event-recurring">↻ Recurring</span>
+                        <span className="v2-event-recurring">{my ? eventsCopyMy.recurring : "↻ Recurring"}</span>
                       )}
                     </div>
                     <h3>{event.title}</h3>
@@ -263,14 +269,15 @@ export function EventsPage() {
       <section className="v2-events-cta">
         <div className="v2-events-cta-inner">
           <div>
-            <h2>Want to organise an event?</h2>
+            <h2>{my ? eventsCopyMy.ctaTitle : "Want to organise an event?"}</h2>
             <p>
-              Community leaders can submit events through the admin panel. Reach
-              out to get started.
+              {my
+                ? eventsCopyMy.ctaBody
+                : "Community leaders can submit events through the admin panel. Reach out to get started."}
             </p>
           </div>
           <Link href="/get-involved" className="v2-btn v2-btn-gold">
-            Contact Us
+            {my ? eventsCopyMy.contactUs : "Contact Us"}
           </Link>
         </div>
       </section>

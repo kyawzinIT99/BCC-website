@@ -135,6 +135,7 @@ export const publicNavigation = [
   { href: "/certificates", label: "Certificates" },
   { href: "/stories", label: "News & stories" },
   { href: "/events", label: "Events" },
+  { href: "/live", label: "Live" },
   { href: "/gallery", label: "Gallery" },
   { href: "/approach", label: "Our approach" },
   { href: "/get-involved", label: "Get involved", cta: true },

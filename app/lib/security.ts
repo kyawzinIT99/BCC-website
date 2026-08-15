@@ -177,11 +177,12 @@ export function applySecurityHeaders(request: Request, response: Response) {
       "frame-ancestors 'none'",
       "form-action 'self'",
       "object-src 'none'",
-      "img-src 'self' data: blob:",
+      "img-src 'self' data: blob: https://i.ytimg.com https://img.youtube.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "script-src 'self' 'unsafe-inline'",
       "connect-src 'self'",
+      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.facebook.com https://web.facebook.com",
     ].join("; "),
   );
   if (production) {

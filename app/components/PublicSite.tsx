@@ -13,7 +13,8 @@ import {
   type PublicLanguage,
 } from "./PublicHeader";
 import { MailSubscribe } from "./MailSubscribe";
-import { chromeMy, homePageMy, usePublicLanguage } from "../lib/public-language";
+import { chromeMy, homePageMy, liveCopyMy, usePublicLanguage } from "../lib/public-language";
+import type { LiveStream } from "../lib/live-stream";
 
 const copy = {
   en: {
@@ -190,6 +191,7 @@ export function PublicSite() {
   const [language, setLanguage] = usePublicLanguage();
   const [home, setHome] = useState<HomePageSettings>(defaultHomePage);
   const [posts, setPosts] = useState(seedPosts);
+  const [liveNow, setLiveNow] = useState<LiveStream | null>(null);
   const pageCopy = copy[language];
 
   useEffect(() => {
@@ -197,6 +199,15 @@ export function PublicSite() {
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((payload) => {
         if (payload.home) setHome(payload.home);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/live")
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((payload) => {
+        setLiveNow(payload.current || null);
       })
       .catch(() => undefined);
   }, []);
@@ -243,6 +254,14 @@ export function PublicSite() {
       </div>
 
       {/* ── Header ──────────────────────────────────────────── */}
+      {liveNow ? (
+        <div className="bcc-live-banner">
+          <span className="bcc-live-dot">Live</span>
+          <span>{my ? liveCopyMy.banner : "We are live now"} — {liveNow.title}</span>
+          <Link href="/live">{my ? liveCopyMy.watch : "Watch"} →</Link>
+        </div>
+      ) : null}
+
       <PublicHeader
         activeHref="/"
         language={language}

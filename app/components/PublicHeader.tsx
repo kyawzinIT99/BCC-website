@@ -15,6 +15,7 @@ const primaryHrefs = new Set([
   "/certificates",
   "/stories",
   "/events",
+  "/live",
   "/gallery",
 ]);
 

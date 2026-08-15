@@ -22,6 +22,7 @@ import { AdminOperations } from "./AdminOperations";
 import { InquiryAlert } from "./InquiryAlert";
 import { PageManager } from "./PageManager";
 import { EventsManager } from "./EventsManager";
+import { LiveStreamManager } from "./LiveStreamManager";
 import { SubscribersManager } from "./SubscribersManager";
 import { CustomersReport } from "./CustomersReport";
 
@@ -37,6 +38,7 @@ type AdminSection =
   | "security"
   | "pages"
   | "events"
+  | "live"
   | "subscribers"
   | "inquiries"
   | "reports";
@@ -57,9 +59,10 @@ const adminNavItems: AdminNavItem[] = [
   { id: "security", label: "Security & records", number: "06" },
   { id: "pages", label: "Public pages", number: "07" },
   { id: "events", label: "Events", number: "08" },
-  { id: "subscribers", label: "Subscribers", number: "09", adminOnly: true },
-  { id: "inquiries", label: "Enquiries", number: "10", adminOnly: true },
-  { id: "reports", label: "Reports", number: "11", adminOnly: true },
+  { id: "live", label: "Live stream", number: "09" },
+  { id: "subscribers", label: "Subscribers", number: "10", adminOnly: true },
+  { id: "inquiries", label: "Enquiries", number: "11", adminOnly: true },
+  { id: "reports", label: "Reports", number: "12", adminOnly: true },
 ];
 
 type ComposerMedia = {
@@ -505,6 +508,9 @@ export function AdminDashboard() {
               <button type="button" onClick={() => openSection("events")}>
                 Manage events →
               </button>
+              <button type="button" onClick={() => openSection("live")}>
+                Go live →
+              </button>
             </div>
           </div>
         ) : null}
@@ -862,6 +868,9 @@ export function AdminDashboard() {
         ) : null}
         {activeSection === "events" ? (
           <div className="admin-stage-panel"><EventsManager /></div>
+        ) : null}
+        {activeSection === "live" ? (
+          <div className="admin-stage-panel"><LiveStreamManager /></div>
         ) : null}
         {activeSection === "subscribers" && session.role !== "editor" ? (
           <div className="admin-stage-panel">

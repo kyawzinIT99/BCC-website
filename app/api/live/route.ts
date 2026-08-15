@@ -52,19 +52,13 @@ async function endOtherLiveStreams(db: D1Database, keepId?: number) {
     .run();
 }
 
-function parsePayload(payload: {
-  title?: string;
-  platform?: string;
-  sourceUrl?: string;
-  description?: string;
-  status?: string;
-}) {
-  const title = (payload.title || "").trim();
+function parsePayload(payload: Record<string, unknown>) {
+  const title = String(payload.title || "").trim();
   if (!title || title.length > 160) {
     return { error: "A valid title is required (max 160 characters)" };
   }
   const platform = payload.platform === "facebook" ? "facebook" : payload.platform === "youtube" ? "youtube" : "";
-  const parsed = parseLiveUrl(payload.sourceUrl || "", platform as LivePlatform | "");
+  const parsed = parseLiveUrl(String(payload.sourceUrl || ""), platform as LivePlatform | "");
   if ("error" in parsed) return { error: parsed.error };
   const status: LiveStatus =
     payload.status === "live" || payload.status === "ended" || payload.status === "draft"
@@ -75,7 +69,7 @@ function parsePayload(payload: {
     platform: parsed.platform,
     sourceUrl: parsed.sourceUrl,
     embedUrl: parsed.embedUrl,
-    description: (payload.description || "").trim().slice(0, 800),
+    description: String(payload.description || "").trim().slice(0, 800),
     status,
   };
 }
@@ -131,7 +125,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const parsed = parsePayload((await request.json()) as Record<string, string>);
+    const parsed = parsePayload((await request.json()) as Record<string, unknown>);
     if ("error" in parsed) {
       return Response.json({ error: parsed.error }, { status: 400 });
     }
@@ -175,7 +169,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const payload = (await request.json()) as Record<string, string> & { id?: number };
+    const payload = (await request.json()) as Record<string, unknown>;
     const id = Number(payload.id);
     if (!Number.isSafeInteger(id)) {
       return Response.json({ error: "Valid live stream ID required" }, { status: 400 });

@@ -6,7 +6,7 @@ alwaysApply: true
 # BCC platform memory
 
 - Public pages include Home, About, Our Work, Giving, Certificates, News & Stories, Approach, Get Involved, Events, Live, Gallery.
-- Live (Facebook/YouTube embed) is Admin-controlled via Live stream (`community_live_streams`).
+- Live (Facebook/YouTube/TikTok embed) is Admin-controlled via Live stream (`community_live_streams`).
 - Giving (donation amount + yearly total) and Certificates gallery are Admin-controlled via Public pages (`content_json`).
 
 ## Hosting split (do not change without owner confirmation)

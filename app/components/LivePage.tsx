@@ -46,7 +46,7 @@ export function LivePage() {
           <p className="v2-events-subtitle">
             {my
               ? liveCopyMy.subtitle
-              : "Facebook and YouTube live streams published by authorised administrators."}
+              : "Facebook, YouTube and TikTok live streams published by authorised administrators."}
           </p>
         </div>
       </section>

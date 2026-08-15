@@ -111,7 +111,7 @@ export function LiveStreamManager() {
         <div>
           <h2>Live stream</h2>
           <p>
-            Paste a Facebook Live or YouTube URL. When status is Live now, it appears on the public Live page and Home.
+            Paste a Facebook, YouTube, or TikTok URL. When status is Live now, it appears on the public Live page and Home.
           </p>
         </div>
         <button type="button" className="events-create-btn" onClick={startCreate}>
@@ -151,6 +151,7 @@ export function LiveStreamManager() {
               >
                 <option value="youtube">YouTube</option>
                 <option value="facebook">Facebook</option>
+                <option value="tiktok">TikTok</option>
               </select>
             </label>
             <label className="wide">
@@ -163,11 +164,13 @@ export function LiveStreamManager() {
                 placeholder={
                   form.platform === "facebook"
                     ? "https://www.facebook.com/.../videos/..."
-                    : "https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                    : form.platform === "tiktok"
+                      ? "https://www.tiktok.com/@name/live or /video/..."
+                      : "https://www.youtube.com/watch?v=... or https://youtu.be/..."
                 }
               />
               <span className="field-guidance">
-                Copy the live link from YouTube or Facebook, then save. Draft stays private. Live now shows on the website. Ended keeps a replay if the platform still allows it.
+                Copy the live link from YouTube, Facebook, or TikTok, then save. Draft stays private. Live now shows on the website. Ended keeps a replay if the platform still allows it.
               </span>
             </label>
             <label>
@@ -206,7 +209,7 @@ export function LiveStreamManager() {
       <div className="events-list-admin">
         {streams.length === 0 ? (
           <p className="events-empty">
-            No live streams yet. Click &quot;+ New live&quot; and paste a Facebook or YouTube URL.
+            No live streams yet. Click &quot;+ New live&quot; and paste a Facebook, YouTube, or TikTok URL.
           </p>
         ) : (
           <table className="events-table">

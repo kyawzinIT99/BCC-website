@@ -57,7 +57,10 @@ function parsePayload(payload: Record<string, unknown>) {
   if (!title || title.length > 160) {
     return { error: "A valid title is required (max 160 characters)" };
   }
-  const platform = payload.platform === "facebook" ? "facebook" : payload.platform === "youtube" ? "youtube" : "";
+  const platform =
+    payload.platform === "facebook" || payload.platform === "youtube" || payload.platform === "tiktok"
+      ? payload.platform
+      : "";
   const parsed = parseLiveUrl(String(payload.sourceUrl || ""), platform as LivePlatform | "");
   if ("error" in parsed) return { error: parsed.error };
   const status: LiveStatus =

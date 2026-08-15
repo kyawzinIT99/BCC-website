@@ -1,4 +1,4 @@
-import type { LiveStream } from "../lib/live-stream";
+import { livePlatformLabels, type LiveStream } from "../lib/live-stream";
 
 export function LivePlayer({
   stream,
@@ -10,7 +10,7 @@ export function LivePlayer({
   if (!stream.embedUrl) return null;
   return (
     <div className="bcc-live-player">
-      <div className="bcc-live-frame">
+      <div className={`bcc-live-frame${stream.platform === "tiktok" ? " bcc-live-frame--tiktok" : ""}`}>
         <iframe
           title={stream.title}
           src={stream.embedUrl}
@@ -25,7 +25,7 @@ export function LivePlayer({
         <h2 id={titleId}>{stream.title}</h2>
         {stream.description ? <p>{stream.description}</p> : null}
         <a href={stream.sourceUrl} target="_blank" rel="noreferrer">
-          Watch on {stream.platform === "facebook" ? "Facebook" : "YouTube"} ↗
+          Watch on {livePlatformLabels[stream.platform]} ↗
         </a>
       </div>
     </div>

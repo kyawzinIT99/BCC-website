@@ -2960,6 +2960,7 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
 .events-cat-badge[data-cat="learning"] { background: #dbeafe; color: #1e40af; }
 .events-cat-badge[data-cat="youtube"] { background: #fee2e2; color: #991b1b; }
 .events-cat-badge[data-cat="facebook"] { background: #dbeafe; color: #1e40af; }
+.events-cat-badge[data-cat="tiktok"] { background: #f3e8ff; color: #6b21a8; }
 .events-status-badge { padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
 .events-status-badge.published { background: #d1fae5; color: #065f46; }
 .events-status-badge.live { background: #fee2e2; color: #991b1b; }
@@ -4975,6 +4976,11 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
   width: 100%;
   height: 100%;
   border: 0;
+}
+.bcc-live-frame--tiktok {
+  padding-top: 120%;
+  max-width: 420px;
+  margin: 0 auto;
 }
 .bcc-live-meta h2 { margin: 0; font-size: 22px; }
 .bcc-live-meta p { margin: 8px 0 0; color: var(--muted); }

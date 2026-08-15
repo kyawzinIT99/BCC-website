@@ -4,7 +4,7 @@ import { LivePage } from "../components/LivePage";
 export const metadata: Metadata = {
   title: "Live — Burmese Catholic Community of Western Australia",
   description:
-    "Watch Facebook and YouTube live streams from the Burmese Catholic Community of Western Australia.",
+    "Watch Facebook, YouTube and TikTok live streams from the Burmese Catholic Community of Western Australia.",
 };
 
 export default function Live() {

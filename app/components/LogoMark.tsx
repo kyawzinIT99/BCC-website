@@ -1,5 +1,3 @@
-import { bccwaLogoDataUrl } from "./brandAssets";
-
 type LogoMarkProps = {
   className?: string;
 };
@@ -11,7 +9,12 @@ export function LogoMark({ className = "" }: LogoMarkProps) {
       aria-hidden="true"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={bccwaLogoDataUrl} alt="" width={720} height={405} />
+      <img
+        src="/bccwa-logo.jpg?v=20260822"
+        alt=""
+        width={800}
+        height={800}
+      />
     </span>
   );
 }

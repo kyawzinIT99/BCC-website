@@ -81,14 +81,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
   letter-spacing: -.02em;
 }
 .community-logo {
-  width: 64px;
-  height: 48px;
+  width: 72px;
+  height: 72px;
   display: grid;
   place-items: center;
-  flex: 0 0 64px;
+  flex: 0 0 72px;
   overflow: hidden;
-  border-radius: 6px;
-  background: #a8d8ea;
+  border-radius: 10px;
+  background: #f4f1f1;
   box-shadow: 0 0 0 1px rgba(255,255,255,.35);
 }
 .community-logo img {
@@ -528,11 +528,11 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
   text-transform: uppercase;
 }
 .bcc-menubar--pro .community-logo {
-  width: 52px;
-  height: 40px;
-  flex: 0 0 52px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  border-radius: 10px;
+  background: #f4f1f1;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 .bcc-menubar-nav--desktop {
@@ -783,9 +783,9 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
     font-size: 10px;
   }
   .bcc-menubar--pro .community-logo {
-    width: 46px;
-    height: 36px;
-    flex-basis: 46px;
+    width: 58px;
+    height: 58px;
+    flex-basis: 58px;
   }
 }
 

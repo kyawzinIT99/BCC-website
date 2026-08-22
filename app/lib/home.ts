@@ -25,7 +25,7 @@ export const defaultHomePage: HomePageSettings = {
     "Celebrating Burmese Catholic life in Western Australia through faith, cultural gatherings, family connection and community stories.",
   heroImageUrl: "/community-hero-group.jpg",
   heroImageAlt:
-    "Members of the Burmese Catholic community gathering outdoors in Western Australia.",
+    "Members of the Burmese Catholic Community of Western Australia gathered for a community celebration.",
   helpTitle: "What can we help you with?",
   helpIntro: "Choose one path. We will show the safest next step.",
   pathways: [

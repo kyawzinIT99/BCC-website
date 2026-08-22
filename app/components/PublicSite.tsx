@@ -239,6 +239,13 @@ export function PublicSite() {
       };
 
   const featuredPosts = posts.slice(0, 3);
+  const usesCommunityHero = localizedHome.heroImageUrl === "/community-hero-group.jpg";
+  const heroImageSrc = usesCommunityHero
+    ? "/community-hero-group.jpg?v=20260822-181359"
+    : localizedHome.heroImageUrl;
+  const heroImageAlt = usesCommunityHero
+    ? "Members of the Burmese Catholic Community of Western Australia gathered for a community celebration."
+    : localizedHome.heroImageAlt;
   const storyImages = [
     "/story-prayer.png",
     "/story-cultural.png",
@@ -275,7 +282,7 @@ export function PublicSite() {
       >
         <div className="v2-hero-bg">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={localizedHome.heroImageUrl} alt={localizedHome.heroImageAlt} />
+          <img src={heroImageSrc} alt={heroImageAlt} />
           <div className="v2-hero-overlay" />
         </div>
         <div className="v2-hero-content">

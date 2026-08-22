@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const brandRewrites = [
+  "bccwa-logo-original.png",
   "bccwa-logo.jpg",
   "logo.jpg",
   "favicon.png",
@@ -59,7 +60,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       ...brandRewrites,
-      { source: "/api/brand/logo", destination: "/_next/static/brand/bccwa-logo.jpg" },
+      { source: "/api/brand/logo", destination: "/_next/static/brand/bccwa-logo-original.png" },
       { source: "/api/brand/favicon", destination: "/_next/static/brand/favicon.png" },
     ];
   },

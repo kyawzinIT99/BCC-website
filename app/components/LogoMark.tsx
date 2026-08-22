@@ -10,10 +10,10 @@ export function LogoMark({ className = "" }: LogoMarkProps) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/bccwa-logo.jpg?v=20260822"
+        src="/bccwa-logo-original.png?v=20260822b"
         alt=""
-        width={800}
-        height={800}
+        width={560}
+        height={560}
       />
     </span>
   );

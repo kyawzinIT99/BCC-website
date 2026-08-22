@@ -8,6 +8,7 @@ mkdirSync(outDir, { recursive: true });
 
 /** Hostinger Node deploys often omit `public/`; ship brand media inside `.next/static`. */
 const assets = [
+  ["public/bccwa-logo-original.png", "bccwa-logo-original.png"],
   ["public/bccwa-logo.jpg", "bccwa-logo.jpg"],
   ["public/logo.jpg", "logo.jpg"],
   ["public/favicon.png", "favicon.png"],

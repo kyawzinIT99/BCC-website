@@ -105,37 +105,42 @@ button, a { -webkit-tap-highlight-color: transparent; }
   width: 238px;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
-  padding: 8px;
-  border-radius: 12px;
-  background: #f4f1f1;
-  color: #2d2220;
+  gap: 9px;
+  padding: 0;
+  background: transparent;
+  color: #fff;
   text-align: center;
 }
 .official-brand-text {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   width: 100%;
   font-size: 9px;
-  font-weight: 750;
-  line-height: 1.2;
-  letter-spacing: .025em;
-  color: #2d2220;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: .045em;
+  color: rgba(255, 255, 255, .92);
 }
 .official-brand-text strong {
   font-size: 10px;
   font-weight: 900;
+  color: #fff;
+  white-space: nowrap;
 }
 .official-brand-text .official-brand-acronym {
-  color: #b35318;
+  color: #f0a33a;
 }
-.official-brand-text > span:nth-last-child(2) {
-  color: #565273;
+.official-brand-text .official-brand-formed {
+  margin-top: 2px;
+  color: #f5cb52;
 }
-.official-brand-text > span:last-child {
-  color: #397383;
+.official-brand-text .official-brand-incorporated {
+  color: #cbc4e8;
+}
+.official-brand-text .official-brand-abn {
+  color: #83d3dc;
   font-weight: 900;
 }
 .main-nav {
@@ -559,8 +564,8 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
 }
 .bcc-menubar--pro .official-wordmark {
   flex-direction: column;
-  gap: 7px;
-  color: #2d2220;
+  gap: 9px;
+  color: #fff;
 }
 .bcc-menubar--pro .brand-name {
   font-size: 11px;
@@ -823,7 +828,7 @@ footer { padding: 70px clamp(20px, 4vw, 64px) 26px; background: #0a253b; color: 
 @media (max-width: 420px) {
   .bcc-menubar--pro .official-wordmark {
     width: 205px;
-    padding: 7px;
+    padding: 0;
   }
   .official-brand-text {
     font-size: 8px;

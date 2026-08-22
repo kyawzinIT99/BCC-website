@@ -9,6 +9,7 @@ import {
   seedPosts,
 } from "../lib/content";
 import { LogoMark } from "../components/LogoMark";
+import { OfficialBrandText } from "../components/OfficialBrandText";
 import { sectionDefinitions, sectionKeys } from "../lib/sections";
 import type { StaffUser } from "../lib/auth";
 import { AdminLogin } from "./AdminLogin";
@@ -427,9 +428,9 @@ export function AdminDashboard() {
   return (
     <main className="admin-shell">
       <aside className="admin-sidebar">
-        <Link className="wordmark admin-wordmark" href="/">
+        <Link className="wordmark official-wordmark admin-wordmark" href="/">
           <LogoMark />
-          <span>BURMESE CATHOLIC COMMUNITY WA</span>
+          <OfficialBrandText />
         </Link>
         <nav aria-label="Admin sections">
           {visibleNav.map((item) => (

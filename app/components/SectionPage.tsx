@@ -22,6 +22,7 @@ import {
 } from "../lib/page-media";
 import { sectionDefinitions, type SectionKey } from "../lib/sections";
 import { LogoMark } from "./LogoMark";
+import { OfficialBrandText } from "./OfficialBrandText";
 import { PublicHeader } from "./PublicHeader";
 import { CommunityContactForm } from "./CommunityContactForm";
 import {
@@ -553,9 +554,9 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
       {sectionKey === "get-involved" && <CommunityContactForm />}
 
       <footer className="section-footer">
-        <Link className="wordmark" href="/">
+        <Link className="wordmark official-wordmark" href="/">
           <LogoMark />
-          <span>BURMESE CATHOLIC COMMUNITY WA</span>
+          <OfficialBrandText />
         </Link>
         <p>
           {my

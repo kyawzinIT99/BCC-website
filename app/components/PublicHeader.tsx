@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { chromeMy, navLabel, publicLanguages, type PublicLanguage } from "../lib/public-language";
 import { publicNavigation } from "../lib/sections";
 import { LogoMark } from "./LogoMark";
+import { OfficialBrandText } from "./OfficialBrandText";
 
 export { publicLanguages, type PublicLanguage };
 
@@ -86,16 +87,12 @@ export function PublicHeader({
     <header className="public-header-shell bcc-menubar bcc-menubar--pro">
       <div className="bcc-menubar-bar">
         <Link
-          className="wordmark"
+          className="wordmark official-wordmark"
           href="/"
           aria-label="Burmese Catholic Community of Western Australia home"
         >
           <LogoMark />
-          <span className="brand-name">
-            BURMESE CATHOLIC
-            <br />
-            COMMUNITY WA
-          </span>
+          <OfficialBrandText />
         </Link>
 
         <nav className="bcc-menubar-nav bcc-menubar-nav--desktop" aria-label="Community pages">

@@ -23,6 +23,12 @@ import {
 import { sectionDefinitions, type SectionKey } from "../lib/sections";
 import { LogoMark } from "./LogoMark";
 import { OfficialBrandText } from "./OfficialBrandText";
+
+const officialMailboxes = [
+  { label: "Administration", address: "admin@bccwac.com" },
+  { label: "General information", address: "info@bccwac.com" },
+  { label: "Secretary", address: "secretary@bccwac.com" },
+] as const;
 import { PublicHeader } from "./PublicHeader";
 import { CommunityContactForm } from "./CommunityContactForm";
 import {
@@ -454,6 +460,15 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
             <div>
               <p className="eyebrow">{my ? aboutChromeMy.contactEyebrow : "Contact the community"}</p>
               <h2 id="bcc-contact-title">{my ? aboutChromeMy.contactTitle : "One private starting point."}</h2>
+              <div className="bcc-mailboxes" aria-label="Official BCCWA email addresses">
+                <p>{my ? "BCCWA တရားဝင် အီးမေးလ်များ" : "Official domain mailboxes"}</p>
+                {officialMailboxes.map((mailbox) => (
+                  <a href={`mailto:${mailbox.address}`} key={mailbox.address}>
+                    <span>{mailbox.label}</span>
+                    <strong>{mailbox.address}</strong>
+                  </a>
+                ))}
+              </div>
             </div>
             <div className="bcc-contact-action">
               <p>

@@ -133,6 +133,7 @@ test("publishes an admin-managed newsletter PDF archive", async () => {
   assert.match(legacyPage, /redirect\("\/newsletter"\)/);
   assert.match(pageContent, /newsletter-september-2026\.pdf/);
   assert.match(pageContent, /source\.slice\(0, 60\)/);
+  assert.match(pageContent, /hasNewsletterItems \? raw\.galleryIntro : ""/);
   assert.match(pagesApi, /isLegacyCertificatesPage/);
   assert.match(sectionPage, /Latest issue and past newsletters/);
   assert.match(sectionPage, /Read online/);

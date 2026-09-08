@@ -108,7 +108,9 @@ export function normalizeCertificatesContent(value: unknown): CertificatesConten
   });
   return {
     galleryIntro:
-      String(raw.galleryIntro || defaultCertificatesContent.galleryIntro).trim().slice(0, 500) ||
+      String(
+        (hasNewsletterItems ? raw.galleryIntro : "") || defaultCertificatesContent.galleryIntro,
+      ).trim().slice(0, 500) ||
       defaultCertificatesContent.galleryIntro,
     items: items.length ? items : defaultCertificatesContent.items.map((item) => ({ ...item })),
   };

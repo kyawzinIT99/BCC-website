@@ -127,13 +127,16 @@ function pageResponse(key: SectionKey, page: Record<string, unknown> | null) {
     };
   }
   const content = parsePageContent(key, page.content_json);
+  const isLegacyCertificatesPage =
+    key === "certificates" && !String(page.content_json || "").includes('"pdfUrl"');
+  const copy = isLegacyCertificatesPage ? sectionDefinitions.certificates : null;
   return {
     key: page.key,
-    eyebrow: page.eyebrow,
-    title: page.title,
-    summary: page.summary,
-    statement: page.statement,
-    features: rowFeatures(page.features_json, key),
+    eyebrow: copy?.eyebrow || page.eyebrow,
+    title: copy?.title || page.title,
+    summary: copy?.summary || page.summary,
+    statement: copy?.statement || page.statement,
+    features: copy?.features || rowFeatures(page.features_json, key),
     about: key === "about" ? rowAbout(page.about_json) : undefined,
     media: parsePageMedia(key, page.media_json),
     content: supportsPageContent(key) ? content : undefined,

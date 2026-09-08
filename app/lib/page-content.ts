@@ -1,4 +1,4 @@
-/** Admin-controlled structured content for Giving and Certificates pages. */
+/** Admin-controlled structured content for Giving and Newsletter pages. */
 
 export type GivingContent = {
   amountLabel: string;
@@ -11,21 +11,24 @@ export type GivingContent = {
   updatedLabel: string;
 };
 
-export type CertificateItem = {
+export type NewsletterItem = {
   id: string;
   title: string;
-  issuer: string;
-  year: string;
+  issueDate: string;
   description: string;
-  imageUrl: string;
-  imageAlt: string;
+  pdfUrl: string;
+  fileName: string;
   visible: boolean;
 };
 
-export type CertificatesContent = {
+export type NewsletterContent = {
   galleryIntro: string;
-  items: CertificateItem[];
+  items: NewsletterItem[];
 };
+
+// Keep these aliases while the persisted page key remains `certificates`.
+export type CertificateItem = NewsletterItem;
+export type CertificatesContent = NewsletterContent;
 
 export type PageStructuredContent = {
   giving?: GivingContent;
@@ -47,28 +50,26 @@ export const defaultGivingContent: GivingContent = {
 
 export const defaultCertificatesContent: CertificatesContent = {
   galleryIntro:
-    "Certificates and formal recognitions published by authorised administrators. Only items marked visible appear on the public website.",
+    "Read the latest BCCWA community newsletter or revisit an earlier issue. Newsletters remain in this public archive after authorised administrators publish them.",
   items: [
     {
-      id: "cert-1",
-      title: "Certificate of appreciation",
-      issuer: "Community partner",
-      year: "2026",
-      description: "Recognition of volunteer service and community care.",
-      imageUrl: "",
-      imageAlt: "Certificate image",
-      visible: false,
+      id: "newsletter-2026-09",
+      title: "BCCWA Newsletter - September 2026",
+      issueDate: "6 September 2026",
+      description: "Community news, parish updates, committee information and upcoming activities.",
+      pdfUrl: "/newsletters/newsletter-september-2026.pdf",
+      fileName: "Newsletter for September 2026.pdf",
+      visible: true,
     },
   ],
 };
 
-function isSafeImageHref(value: string) {
+function isSafeDocumentHref(value: string) {
   return (
     !value ||
     value.startsWith("/") ||
     value.startsWith("https://") ||
-    value.startsWith("http://localhost") ||
-    value.startsWith("data:image/")
+    value.startsWith("http://localhost")
   );
 }
 
@@ -88,18 +89,20 @@ export function normalizeGivingContent(value: unknown): GivingContent {
 
 export function normalizeCertificatesContent(value: unknown): CertificatesContent {
   const raw = value && typeof value === "object" ? (value as Partial<CertificatesContent>) : {};
-  const source = Array.isArray(raw.items) ? raw.items : defaultCertificatesContent.items;
-  const items = source.slice(0, 12).map((item, index) => {
+  const hasNewsletterItems = Array.isArray(raw.items) && raw.items.some(
+    (item) => item && typeof item === "object" && "pdfUrl" in item,
+  );
+  const source = hasNewsletterItems ? raw.items! : defaultCertificatesContent.items;
+  const items = source.slice(0, 60).map((item, index) => {
     const row = item && typeof item === "object" ? (item as Partial<CertificateItem>) : {};
-    const imageUrl = String(row.imageUrl || "").trim().slice(0, 500);
+    const pdfUrl = String(row.pdfUrl || "").trim().slice(0, 500);
     return {
-      id: String(row.id || `cert-${index + 1}`).trim().slice(0, 40) || `cert-${index + 1}`,
-      title: String(row.title || "Certificate").trim().slice(0, 140) || "Certificate",
-      issuer: String(row.issuer || "").trim().slice(0, 120),
-      year: String(row.year || "").trim().slice(0, 20),
+      id: String(row.id || `newsletter-${index + 1}`).trim().slice(0, 60) || `newsletter-${index + 1}`,
+      title: String(row.title || "Community newsletter").trim().slice(0, 160) || "Community newsletter",
+      issueDate: String(row.issueDate || "").trim().slice(0, 60),
       description: String(row.description || "").trim().slice(0, 400),
-      imageUrl: isSafeImageHref(imageUrl) ? imageUrl : "",
-      imageAlt: String(row.imageAlt || row.title || "Certificate").trim().slice(0, 240),
+      pdfUrl: isSafeDocumentHref(pdfUrl) ? pdfUrl : "",
+      fileName: String(row.fileName || `${row.title || "newsletter"}.pdf`).trim().slice(0, 180),
       visible: Boolean(row.visible),
     };
   });

@@ -10,6 +10,7 @@ The Australia-inspired palette remains in place. The public wordmark now uses th
 
 - Distinctive responsive public website at `/`
 - Dedicated public pages at `/about`, `/our-work`, `/stories`, `/approach`, and `/get-involved`
+- Public Newsletter page at `/newsletter` with latest-issue access and a retained PDF archive
 - Staff editorial dashboard at `/admin`
 - Password-based staff sessions and role-based Team Access
 - Owner-managed account creation, modification, disabling, and password reset
@@ -25,6 +26,7 @@ The Australia-inspired palette remains in place. The public wordmark now uses th
 - Private English-learning navigation, donation/funding, volunteer, partnership, and general inquiries
 - Direct links to official AMEP providers and the ACNC Charity Register
 - Administrator-managed headline, summary, and statement for every public page
+- Administrator-managed newsletter titles, issue dates, descriptions, visibility, and PDF uploads
 - Open Graph and favicon artwork
 - Optional machine-to-machine write token for approved automation
 - Private MR.Kyaw Zin Admin assistant for drafting and content review

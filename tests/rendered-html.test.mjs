@@ -3,11 +3,13 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("defines the Burmese Catholic Community of Western Australia public website", async () => {
-  const [page, homeModel, homeApi, header, sectionPage, contactForm, layout, styles] = await Promise.all([
+  const [page, homeModel, homeApi, header, brandText, publicLanguage, sectionPage, contactForm, layout, styles] = await Promise.all([
     readFile(new URL("../app/components/PublicSite.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/home.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/home/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/components/PublicHeader.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/OfficialBrandText.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/public-language.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/components/SectionPage.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/components/CommunityContactForm.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
@@ -15,15 +17,15 @@ test("defines the Burmese Catholic Community of Western Australia public website
   ]);
 
   assert.match(layout, /Burmese Catholic Community of Western Australia/);
-  assert.match(header, /BURMESE CATHOLIC/);
-  assert.match(header, /COMMUNITY WA/);
+  assert.match(brandText, /THE BURMESE CATHOLIC COMMUNITY/);
+  assert.match(brandText, /WESTERN AUSTRALIA INC/);
   assert.match(header, /aria-current/);
-  assert.match(header, /English/);
-  assert.match(header, /Arabic/);
-  assert.match(header, /Dari/);
-  assert.match(header, /Karen/);
-  assert.match(header, /Vietnamese/);
-  assert.doesNotMatch(header, /label: "Burmese"|label: "Myanmar"/);
+  assert.match(publicLanguage, /English/);
+  assert.match(publicLanguage, /Arabic/);
+  assert.match(publicLanguage, /Dari/);
+  assert.match(publicLanguage, /Karen/);
+  assert.match(publicLanguage, /Vietnamese/);
+  assert.doesNotMatch(publicLanguage, /label: "Burmese"|label: "Myanmar"/);
   assert.match(page, /<PublicHeader[\s\S]*language=/);
   assert.match(sectionPage, /<PublicHeader[\s\S]*activeHref=/);
   assert.doesNotMatch(sectionPage, /PublicQuestionWidget/);
@@ -45,15 +47,15 @@ test("defines the Burmese Catholic Community of Western Australia public website
     /our-work-community\.jpg/,
   );
   assert.match(sectionPage, /work-updates-route/);
-  assert.match(sectionPage, /Our Work explains what we do\. News &amp; Stories shows what is happening now\./);
+  assert.match(sectionPage, /Our Work explains what we do\. News & Stories shows what is happening now\./);
   assert.match(sectionPage, /Payment details appear only after organisation approval\./);
   assert.match(sectionPage, /This is the changing news and stories feed\./);
   assert.match(sectionPage, /Recent approved updates/);
-  assert.match(sectionPage, /News &amp; Stories feed/);
+  assert.match(sectionPage, /News & Stories feed/);
   assert.match(sectionPage, /sectionKey === "stories"/);
   assert.doesNotMatch(sectionPage, /placement=\$\{encodeURIComponent\(sectionKey\)\}/);
-  assert.match(sectionPage, /aboutProfile\.historyTitle/);
-  assert.match(sectionPage, /aboutProfile\.committee/);
+  assert.match(sectionPage, /aboutDisplay\.historyTitle/);
+  assert.match(sectionPage, /aboutDisplay\.committee/);
   assert.match(sectionPage, /personal contact details are not published/);
   assert.match(sectionPage, /\/get-involved#community-contact/);
   assert.doesNotMatch(sectionPage, /phoneHref\(aboutProfile\.phone\)/);
@@ -113,6 +115,31 @@ test("aligns Our Work and Our Approach with the community group", async () => {
   assert.match(sections, /transparent follow-up/);
   assert.match(sections, /Faith-led\. Community-shaped\. Carefully shared\./);
   assert.match(sections, /context, consent and administrator review/);
+});
+
+test("publishes an admin-managed newsletter PDF archive", async () => {
+  const [sections, sectionPage, pageManager, pageContent, pagesApi, newsletterPage, legacyPage] = await Promise.all([
+    readFile(new URL("../app/lib/sections.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/SectionPage.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/admin/PageManager.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/page-content.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/pages/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/newsletter/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/certificates/page.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(sections, /href: "\/newsletter", label: "Newsletter"/);
+  assert.match(newsletterPage, /SectionPage sectionKey="certificates"/);
+  assert.match(legacyPage, /redirect\("\/newsletter"\)/);
+  assert.match(pageContent, /newsletter-september-2026\.pdf/);
+  assert.match(pageContent, /source\.slice\(0, 60\)/);
+  assert.match(pagesApi, /isLegacyCertificatesPage/);
+  assert.match(sectionPage, /Latest issue and past newsletters/);
+  assert.match(sectionPage, /Read online/);
+  assert.match(sectionPage, /Download PDF/);
+  assert.match(pageManager, /Upload newsletter PDF/);
+  assert.match(pageManager, /accept="application\/pdf"/);
+  assert.match(pageManager, /items: \[item, \.\.\.fields\.content!\.certificates!\.items\]/);
 });
 
 test("publishes the supplied BCCWA history and committee directory clearly", async () => {
@@ -184,7 +211,7 @@ test("defines the separate staff Admin Panel", async () => {
   assert.match(postsApi, /export async function DELETE/);
   assert.match(postsApi, /post\.delete/);
   assert.match(admin, /deletePost/);
-  assert.match(admin, />Delete</);
+  assert.match(admin, /Delete post/);
   assert.match(mediaApi, /X-Content-Type-Options/);
   assert.match(login, /Secure sign in/);
   assert.match(team, /Hostinger hPanel is separate/);

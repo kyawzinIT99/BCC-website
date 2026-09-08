@@ -113,16 +113,16 @@ export const sectionDefinitions: Record<SectionKey, SectionDefinition> = {
   },
   certificates: {
     key: "certificates",
-    label: "Certificates",
-    eyebrow: "Recognition",
-    title: "Certificates and formal recognition.",
+    label: "Newsletter",
+    eyebrow: "Community newsletter",
+    title: "News, faith and community - kept together.",
     summary:
-      "A public gallery of certificates and recognitions published by authorised administrators for community trust and shared history.",
-    statement: "Service remembered. Trust made visible.",
+      "Read the latest BCCWA newsletter and return to past issues in a permanent, administrator-managed PDF archive.",
+    statement: "Today's community news. Tomorrow's shared history.",
     features: [
-      { number: "01", title: "Published by Admin", description: "Only approved certificates appear on this page." },
-      { number: "02", title: "Community trust", description: "Formal recognition helps families see the community’s accountable service." },
-      { number: "03", title: "Living record", description: "New certificates can be added anytime from the Admin Panel." },
+      { number: "01", title: "Latest issue", description: "The newest approved newsletter is placed first for easy access." },
+      { number: "02", title: "PDF access", description: "Visitors can open or download each complete newsletter." },
+      { number: "03", title: "Issue archive", description: "Older newsletters remain available after new editions are published." },
     ],
   },
 };
@@ -132,7 +132,7 @@ export const publicNavigation = [
   { href: "/about", label: "About" },
   { href: "/our-work", label: "Our work" },
   { href: "/giving", label: "Giving" },
-  { href: "/certificates", label: "Certificates" },
+  { href: "/newsletter", label: "Newsletter" },
   { href: "/stories", label: "News & stories" },
   { href: "/events", label: "Events" },
   { href: "/live", label: "Live" },

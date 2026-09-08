@@ -81,7 +81,7 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
     : displayCopy.features;
   const aboutMedia = pageMedia || defaultPageMedia.about;
   const workMedia = pageMedia || defaultPageMedia["our-work"];
-  const visibleCertificates = certificates.items.filter((item) => item.visible);
+  const visibleNewsletters = certificates.items.filter((item) => item.visible && item.pdfUrl);
   const aboutDisplay = my
     ? {
         ...aboutProfile,
@@ -142,7 +142,7 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
   return (
     <main className={`section-page section-${sectionKey}`} lang={my ? "my" : undefined}>
       <PublicHeader
-        activeHref={`/${sectionKey}`}
+        activeHref={sectionKey === "certificates" ? "/newsletter" : `/${sectionKey}`}
         language={language}
         onLanguageChange={setLanguage}
       />
@@ -248,30 +248,32 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
       ) : null}
 
       {sectionKey === "certificates" ? (
-        <section className="certificates-gallery" aria-labelledby="certificates-gallery-title">
-          <div className="certificates-gallery-intro">
-            <p className="eyebrow">{my ? extraSectionChromeMy.certificatesEyebrow : "Public record"}</p>
-            <h2 id="certificates-gallery-title">{my ? extraSectionChromeMy.certificatesTitle : "Certificates"}</h2>
+        <section className="newsletter-gallery" aria-labelledby="newsletter-gallery-title">
+          <div className="newsletter-gallery-intro">
+            <p className="eyebrow">{my ? extraSectionChromeMy.certificatesEyebrow : "Newsletter archive"}</p>
+            <h2 id="newsletter-gallery-title">{my ? extraSectionChromeMy.certificatesTitle : "Latest issue and past newsletters"}</h2>
             <p>{certificates.galleryIntro}</p>
           </div>
-          {visibleCertificates.length ? (
-            <div className="certificates-grid">
-              {visibleCertificates.map((item) => (
-                <article key={item.id} className="certificate-card">
-                  {item.imageUrl ? (
-                    <figure>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.imageUrl} alt={item.imageAlt || item.title} loading="lazy" />
-                    </figure>
-                  ) : (
-                    <div className="certificate-placeholder" aria-hidden="true">
-                      <span>Certificate</span>
-                    </div>
-                  )}
-                  <div className="certificate-copy">
-                    <span>{[item.year, item.issuer].filter(Boolean).join(" · ")}</span>
+          {visibleNewsletters.length ? (
+            <div className="newsletter-grid">
+              {visibleNewsletters.map((item, index) => (
+                <article key={item.id} className={`newsletter-card${index === 0 ? " is-latest" : ""}`}>
+                  <div className="newsletter-document" aria-hidden="true">
+                    <span>PDF</span>
+                    <i>{index === 0 ? "Latest issue" : "Past issue"}</i>
+                  </div>
+                  <div className="newsletter-copy">
+                    <span>{item.issueDate || "Community newsletter"}</span>
                     <h3>{item.title}</h3>
                     {item.description ? <p>{item.description}</p> : null}
+                    <div className="newsletter-actions">
+                      <a className="button button-dark" href={item.pdfUrl} target="_blank" rel="noreferrer">
+                        Read online
+                      </a>
+                      <a className="newsletter-download" href={item.pdfUrl} download={item.fileName || undefined}>
+                        Download PDF
+                      </a>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -282,7 +284,7 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
               <p>
                 {my
                   ? extraSectionChromeMy.certificatesEmpty
-                  : "Approved certificates will appear here after administrators publish them."}
+                  : "Approved newsletter PDFs will appear here after administrators publish them."}
               </p>
             </div>
           )}

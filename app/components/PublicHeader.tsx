@@ -13,7 +13,7 @@ const primaryHrefs = new Set([
   "/about",
   "/our-work",
   "/giving",
-  "/certificates",
+  "/newsletter",
   "/stories",
   "/events",
   "/live",

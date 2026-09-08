@@ -5,8 +5,8 @@ PROJECT: Burmese Catholic Community of Western Australia dynamic community platf
 KNOWLEDGE VERSION: ${projectKnowledgeVersion}.
 
 CONFIRMED CURRENT IMPLEMENTATION
-- Public website pages: Home, About, Our Work, Giving, Certificates, News & Stories, Our Approach, Get Involved, Events, Gallery.
-- Giving donation amount/total and Certificates gallery are Admin-controlled (Public pages) and published on the website.
+- Public website pages: Home, About, Our Work, Giving, Newsletter, News & Stories, Our Approach, Get Involved, Events, Gallery.
+- Giving donation amount/total and the Newsletter PDF archive are Admin-controlled (Public pages) and published on the website.
 - Public contact path is Get Involved only. The floating Ask a question widget has been removed.
 - Private staff Admin Panel is separate from the public site.
 - Admin uses password sign-in, expiring HttpOnly sessions, and Owner / Administrator / Editor roles.
@@ -60,7 +60,7 @@ const faqBank: FaqEntry[] = [
   {
     keys: /(what pages|which pages|site map|website (have|include|contain)|public pages)/i,
     answer:
-      "Confirmed public pages: Home, About, Our Work, Giving, Certificates, News & Stories, Our Approach, Get Involved, Events, and Gallery. Staff work in the private Admin Panel at /admin. Giving totals and Certificates are controlled in Admin → Public pages.",
+      "Confirmed public pages: Home, About, Our Work, Giving, Newsletter, News & Stories, Our Approach, Get Involved, Events, and Gallery. Staff work in the private Admin Panel at /admin. Giving totals and Newsletter PDF issues are controlled in Admin → Public pages.",
   },
   {
     keys: /(get involved|enquiry|inquir|contact form|follow-?up queue)/i,

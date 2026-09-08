@@ -176,37 +176,32 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
     }));
   }
 
-  async function uploadCertificateImage(file: File | undefined, index: number) {
+  async function uploadNewsletterPdf(file: File | undefined, index: number) {
     if (!file || key !== "certificates" || !fields.content?.certificates) return;
-    setUploadingPageImage(`cert-${index}`);
+    setUploadingPageImage(`newsletter-${index}`);
     setNotice("");
     try {
       const form = new FormData();
       form.set("file", file);
-      form.set(
-        "altText",
-        fields.content.certificates.items[index]?.imageAlt ||
-          fields.content.certificates.items[index]?.title ||
-          file.name,
-      );
+      form.set("altText", fields.content.certificates.items[index]?.title || file.name);
       const response = await fetch("/api/media", { method: "POST", body: form });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Unable to upload image");
+      if (!response.ok) throw new Error(payload.error || "Unable to upload newsletter PDF");
       const mediaId = Number(payload.media.id);
       const url = `/api/media?id=${mediaId}`;
       const items = fields.content.certificates.items.map((item, itemIndex) =>
         itemIndex === index
           ? {
               ...item,
-              imageUrl: url,
-              imageAlt: item.imageAlt || String(payload.media.alt_text || item.title || file.name),
+              pdfUrl: url,
+              fileName: String(payload.media.filename || file.name),
             }
           : item,
       );
       updateCertificates({ ...fields.content.certificates, items });
-      setNotice("Certificate image uploaded. Click Update public page to publish it.");
+      setNotice("Newsletter PDF uploaded. Click Update public page to publish it and retain older issues.");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to upload image");
+      setNotice(error instanceof Error ? error.message : "Unable to upload newsletter PDF");
     } finally {
       setUploadingPageImage(null);
     }
@@ -648,11 +643,11 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
               {key === "certificates" && fields.content?.certificates && (
                 <div className="home-pathway-editor wide" id="certificates-editor">
                   <div className="home-pathway-editor-heading">
-                    <strong>Certificates gallery</strong>
-                    <small>Only items marked visible appear on the public Certificates page</small>
+                    <strong>Newsletter archive</strong>
+                    <small>The first visible issue is shown as latest. Older issues remain available below it.</small>
                   </div>
                   <label className="wide">
-                    Gallery introduction
+                    Archive introduction
                     <textarea
                       rows={2}
                       maxLength={500}
@@ -668,7 +663,7 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
                   </label>
                   {fields.content.certificates.items.map((item, index) => (
                     <fieldset key={item.id}>
-                      <legend>{`Certificate ${String(index + 1).padStart(2, "0")}`}</legend>
+                      <legend>{`${index === 0 ? "Latest newsletter" : "Newsletter"} ${String(index + 1).padStart(2, "0")}`}</legend>
                       <label className="pathway-visibility">
                         <input
                           type="checkbox"
@@ -697,26 +692,14 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
                         />
                       </label>
                       <label>
-                        Issuer
+                        Issue date
                         <input
-                          maxLength={120}
-                          value={item.issuer}
+                          maxLength={60}
+                          placeholder="6 September 2026"
+                          value={item.issueDate}
                           onChange={(event) => {
                             const items = fields.content!.certificates!.items.map((row, rowIndex) =>
-                              rowIndex === index ? { ...row, issuer: event.target.value } : row,
-                            );
-                            updateCertificates({ ...fields.content!.certificates!, items });
-                          }}
-                        />
-                      </label>
-                      <label>
-                        Year
-                        <input
-                          maxLength={20}
-                          value={item.year}
-                          onChange={(event) => {
-                            const items = fields.content!.certificates!.items.map((row, rowIndex) =>
-                              rowIndex === index ? { ...row, year: event.target.value } : row,
+                              rowIndex === index ? { ...row, issueDate: event.target.value } : row,
                             );
                             updateCertificates({ ...fields.content!.certificates!, items });
                           }}
@@ -737,33 +720,34 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
                         />
                       </label>
                       <label className="wide">
-                        Image URL
+                        PDF link
                         <input
                           maxLength={500}
-                          value={item.imageUrl}
+                          placeholder="Upload a PDF below or enter an approved PDF URL"
+                          value={item.pdfUrl}
                           onChange={(event) => {
                             const items = fields.content!.certificates!.items.map((row, rowIndex) =>
-                              rowIndex === index ? { ...row, imageUrl: event.target.value } : row,
+                              rowIndex === index ? { ...row, pdfUrl: event.target.value } : row,
                             );
                             updateCertificates({ ...fields.content!.certificates!, items });
                           }}
                         />
                       </label>
                       <label className="wide">
-                        Upload certificate image
+                        Upload newsletter PDF
                         <input
                           type="file"
-                          accept="image/jpeg,image/png,image/gif,image/webp"
+                          accept="application/pdf"
                           disabled={Boolean(uploadingPageImage) || saving}
                           onChange={(event) => {
-                            void uploadCertificateImage(event.target.files?.[0], index);
+                            void uploadNewsletterPdf(event.target.files?.[0], index);
                             event.target.value = "";
                           }}
                         />
                         <small className="field-guidance">
-                          {uploadingPageImage === `cert-${index}`
+                          {uploadingPageImage === `newsletter-${index}`
                             ? "Uploading…"
-                            : "Upload a scan or photo, then Update public page."}
+                            : "Upload the complete PDF, then click Update public page."}
                         </small>
                       </label>
                       <button
@@ -782,26 +766,25 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
                   <button
                     type="button"
                     className="button-secondary"
-                    disabled={(fields.content.certificates.items.length || 0) >= 12}
+                    disabled={(fields.content.certificates.items.length || 0) >= 60}
                     onClick={() => {
                       const nextIndex = fields.content!.certificates!.items.length + 1;
                       const item: CertificateItem = {
-                        id: `cert-${Date.now()}`,
-                        title: `Certificate ${nextIndex}`,
-                        issuer: "",
-                        year: "",
+                        id: `newsletter-${Date.now()}`,
+                        title: `Community newsletter ${nextIndex}`,
+                        issueDate: "",
                         description: "",
-                        imageUrl: "",
-                        imageAlt: "",
+                        pdfUrl: "",
+                        fileName: "",
                         visible: false,
                       };
                       updateCertificates({
                         ...fields.content!.certificates!,
-                        items: [...fields.content!.certificates!.items, item],
+                        items: [item, ...fields.content!.certificates!.items],
                       });
                     }}
                   >
-                    Add certificate
+                    Add newest newsletter
                   </button>
                 </div>
               )}

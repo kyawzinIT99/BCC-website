@@ -22,7 +22,8 @@ export function usePublicLanguage() {
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored && publicLanguages.some((option) => option.code === stored)) {
-      setLanguage(stored as PublicLanguage);
+      const timer = window.setTimeout(() => setLanguage(stored as PublicLanguage), 0);
+      return () => window.clearTimeout(timer);
     }
   }, []);
 
@@ -39,7 +40,7 @@ export const navLabelsMy: Record<string, string> = {
   "/about": "အကြောင်း",
   "/our-work": "လုပ်ငန်း",
   "/giving": "လှူဒါန်း",
-  "/certificates": "လက်မှတ်",
+  "/newsletter": "သတင်းလွှာ",
   "/stories": "သတင်း",
   "/events": "ပွဲများ",
   "/live": "တိုက်ရိုက်",
@@ -207,16 +208,16 @@ export const sectionCopyMy: Record<
     ],
   },
   certificates: {
-    label: "လက်မှတ်များ",
-    eyebrow: "အသိအမှတ်ပြုခြင်း",
-    title: "လက်မှတ်များ",
+    label: "သတင်းလွှာ",
+    eyebrow: "အသိုင်းအဝိုင်း သတင်းလွှာ",
+    title: "သတင်း၊ ယုံကြည်ခြင်းနှင့် အသိုင်းအဝိုင်းကို အတူတကွ မှတ်တမ်းတင်ထားသည်။",
     summary:
-      "အသိုင်းအဝိုင်း ယုံကြည်မှုနှင့် မျှဝေသော သမိုင်းအတွက် ခွင့်ပြုထားသော စီမံခန့်ခွဲသူများက ထုတ်ဝေသော လက်မှတ်များနှင့် အသိအမှတ်ပြုမှုများ၏ အများပြည်သူ ပြခန်း။",
-    statement: "ဝန်ဆောင်မှုကို မှတ်မိသည်။ ယုံကြည်မှုကို မြင်သာစေသည်။",
+      "နောက်ဆုံး BCCWA သတင်းလွှာကို ဖတ်ရှုပြီး ယခင် PDF စောင်များကို အမြဲတမ်း သိမ်းဆည်းထားသော မှတ်တမ်းတွင် ပြန်လည်ကြည့်ရှုနိုင်သည်။",
+    statement: "ယနေ့ အသိုင်းအဝိုင်းသတင်း။ မနက်ဖြန်အတွက် မျှဝေထားသော သမိုင်း။",
     features: [
-      { number: "01", title: "စီမံခန့်ခွဲသူက ထုတ်ဝေသည်", description: "အတည်ပြုပြီးသော လက်မှတ်များသာ ဤစာမျက်နှာတွင် ပေါ်သည်။" },
-      { number: "02", title: "အသိုင်းအဝိုင်း ယုံကြည်မှု", description: "တရားဝင် အသိအမှတ်ပြုမှုက မိသားစုများအား အသိုင်းအဝိုင်း၏ တာဝန်ယူသော ဝန်ဆောင်မှုကို မြင်စေသည်။" },
-      { number: "03", title: "အသက်ဝင်သော မှတ်တမ်း", description: "လက်မှတ်အသစ်များကို စီမံခန့်ခွဲမှု ဘောင်မှ အချိန်မရွေး ထည့်နိုင်သည်။" },
+      { number: "01", title: "နောက်ဆုံးထုတ်", description: "နောက်ဆုံး အတည်ပြုထားသော သတင်းလွှာကို လွယ်ကူစွာ ဖတ်ရန် ပထမဆုံး ပြသထားသည်။" },
+      { number: "02", title: "PDF ဖတ်ရှုနိုင်မှု", description: "သတင်းလွှာ တစ်စောင်ချင်းစီကို ဖွင့်ကြည့် သို့မဟုတ် ဒေါင်းလုဒ်လုပ်နိုင်သည်။" },
+      { number: "03", title: "ယခင်ထုတ် မှတ်တမ်း", description: "သတင်းလွှာအသစ် ထုတ်ဝေပြီးနောက် ယခင်စောင်များကို ဆက်လက် ရရှိနိုင်သည်။" },
     ],
   },
 };
@@ -304,10 +305,10 @@ export const extraSectionChromeMy = {
   givingTitle: "လှူဒါန်းငွေနှင့် နှစ်စဉ် စုစုပေါင်း",
   howToGive: "မည်သို့ လှူဒါန်းမည်နည်း",
   contactGetInvolved: "ပါဝင်ဆောင်ရွက်ရန်မှတစ်ဆင့် ဆက်သွယ်ရန်",
-  certificatesEyebrow: "အများပြည်သူ မှတ်တမ်း",
-  certificatesTitle: "လက်မှတ်များ",
+  certificatesEyebrow: "သတင်းလွှာ မှတ်တမ်း",
+  certificatesTitle: "နောက်ဆုံးထုတ်နှင့် ယခင် သတင်းလွှာများ",
   comingIntoView: "မကြာမီ ပေါ်လာမည်",
-  certificatesEmpty: "စီမံခန့်ခွဲသူများ ထုတ်ဝေပြီးနောက် အတည်ပြုပြီးသော လက်မှတ်များ ဤနေရာတွင် ပေါ်လာပါမည်။",
+  certificatesEmpty: "စီမံခန့်ခွဲသူများ ထုတ်ဝေပြီးနောက် အတည်ပြုထားသော သတင်းလွှာ PDF များ ဤနေရာတွင် ပေါ်လာပါမည်။",
   storiesBoundaryEyebrow: "ရှင်းလင်းသော အကြောင်းအရာ နယ်နိမိတ်",
   storiesBoundaryTitle: "ဤသည်မှာ ပြောင်းလဲနေသော သတင်းနှင့် ဇာတ်လမ်း စာမျက်နှာဖြစ်သည်။",
   storiesBoundaryBody:

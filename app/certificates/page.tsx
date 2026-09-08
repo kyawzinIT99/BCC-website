@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
-import { SectionPage } from "../components/SectionPage";
-
-export const metadata: Metadata = { title: "Certificates" };
+import { redirect } from "next/navigation";
 
 export default function CertificatesPage() {
-  return <SectionPage sectionKey="certificates" />;
+  redirect("/newsletter");
 }

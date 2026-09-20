@@ -5,6 +5,29 @@ type RateLimitOptions = {
   blockSeconds: number;
 };
 
+function canonicalHostname(hostname: string) {
+  return hostname.replace(/^www\./i, "").toLowerCase();
+}
+
+/** Treat apex and www as the same public site (e.g. bccwac.com and www.bccwac.com). */
+function isSamePublicSite(suppliedOrigin: string, allowedOrigin: string) {
+  try {
+    const supplied = new URL(suppliedOrigin);
+    const allowed = new URL(
+      allowedOrigin.includes("://") ? allowedOrigin : `https://${allowedOrigin}`,
+    );
+    if (supplied.protocol !== "http:" && supplied.protocol !== "https:") {
+      return false;
+    }
+    if (allowed.protocol !== "http:" && allowed.protocol !== "https:") {
+      return false;
+    }
+    return canonicalHostname(supplied.hostname) === canonicalHostname(allowed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   if (!origin) return true;
@@ -16,18 +39,14 @@ export function sameOrigin(request: Request) {
     return false;
   }
 
-  if (suppliedOrigin === new URL(request.url).origin) return true;
+  if (isSamePublicSite(suppliedOrigin, request.url)) return true;
 
   // TLS is terminated before requests reach Node on managed Hostinger apps, so
   // request.url may contain a private upstream origin. Keep CSRF validation
-  // strict by accepting only the explicitly configured public application URL.
+  // strict by accepting the configured public URL, including its www variant.
   const configuredOrigin = process.env.APP_ORIGIN?.trim();
   if (!configuredOrigin) return false;
-  try {
-    return suppliedOrigin === new URL(configuredOrigin).origin;
-  } catch {
-    return false;
-  }
+  return isSamePublicSite(suppliedOrigin, configuredOrigin);
 }
 
 export function mutationRejected(request: Request) {

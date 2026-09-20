@@ -144,7 +144,7 @@ OPENAI_VECTOR_STORE_ID=
 
 `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` are protected one-time deployment secrets. When the database has no staff users, those credentials create the first Owner during sign-in. The Owner then creates Administrator and Editor accounts in Team Access. No default password is committed to Git.
 
-`APP_ORIGIN` must be the exact public HTTPS origin of the deployed website. It allows same-site Admin requests when Hostinger terminates TLS in front of the Node process; do not enter a wildcard or an unrelated domain.
+`APP_ORIGIN` must be the public HTTPS origin of the deployed website (for BCC, `https://bccwac.com`). Apex and `www` are treated as the same site for subscribe and other form posts, so `https://www.bccwac.com` is accepted when `APP_ORIGIN` is the non-www URL. Do not enter an unrelated domain.
 
 Human staff use an HttpOnly, SameSite session cookie. Passwords are stored only as salted PBKDF2-SHA256 hashes. `ADMIN_WRITE_TOKEN` is optional and reserved for approved machine-to-machine automation through the `x-admin-token` header.
 

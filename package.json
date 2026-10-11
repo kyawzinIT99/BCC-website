@@ -44,9 +44,7 @@
     "postcss": "8.5.29",
     "sharp": "0.35.5",
     "image-size": "2.0.3",
-    "drizzle-kit": {
-      "esbuild": "0.28.2"
-    }
+    "esbuild": "0.28.2"
   },
   "type": "module"
 }

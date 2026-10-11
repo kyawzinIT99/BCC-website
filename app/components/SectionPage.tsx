@@ -456,6 +456,17 @@ export function SectionPage({ sectionKey }: { sectionKey: SectionKey }) {
                 ))}
               </div>
             </details>
+            {aboutProfile.welcomePdfUrl && <p>
+              <a
+                className="button button-light"
+                href={aboutProfile.welcomePdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {my ? "BCC ကြိုဆိုရေး လမ်းညွှန် (PDF)" : "View BCC Welcome Guide (PDF)"}
+                <span aria-hidden="true"> ↗</span>
+              </a>
+            </p>}
           </section>
 
           <section className="bcc-contact" aria-labelledby="bcc-contact-title">

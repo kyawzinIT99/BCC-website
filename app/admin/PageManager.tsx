@@ -176,6 +176,30 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
     }));
   }
 
+  async function uploadAboutPdf(file: File | undefined) {
+    if (!file || key !== "about") return;
+    if (file.type !== "application/pdf" || file.size > 15 * 1024 * 1024) {
+      setNotice("Choose a PDF no larger than 15 MB.");
+      return;
+    }
+    setUploadingPageImage("about-pdf");
+    setNotice("");
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      form.set("altText", "BCC Welcome Guide");
+      const response = await fetch("/api/media", { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Unable to upload About PDF");
+      updateAbout({ welcomePdfUrl: `/api/media?id=${Number(payload.media.id)}` });
+      setNotice("PDF uploaded. Click Update public page to publish the About link.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to upload About PDF");
+    } finally {
+      setUploadingPageImage(null);
+    }
+  }
+
   async function uploadNewsletterPdf(file: File | undefined, index: number) {
     if (!file || key !== "certificates" || !fields.content?.certificates) return;
     setUploadingPageImage(`newsletter-${index}`);
@@ -301,7 +325,7 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
         <form className="page-manager-form" onSubmit={save}>
           <label>
             Edit website page
-            <select value={key} onChange={(event) => selectPage(event.target.value as PageSelection)}>
+            <select disabled={saving || Boolean(uploadingPageImage) || uploadingHero} value={key} onChange={(event) => selectPage(event.target.value as PageSelection)}>
               <option value="home">Home page</option>
               {sectionKeys.map((item) => (
                 <option key={item} value={item}>{sectionDefinitions[item].label}</option>
@@ -555,7 +579,9 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
                 </div>
               )}
               {key === "about" && (
-                <AboutProfileEditor profile={fields.about} onChange={updateAbout} />
+                <AboutProfileEditor profile={fields.about} onChange={updateAbout}
+                  onUploadPdf={uploadAboutPdf} uploadingPdf={uploadingPageImage === "about-pdf"}
+                  disabled={saving || Boolean(uploadingPageImage)} />
               )}
               {key === "giving" && fields.content?.giving && (
                 <div className="home-pathway-editor wide" id="giving-totals-editor">
@@ -844,7 +870,7 @@ export function PageManager({ currentUser }: { currentUser: StaffUser }) {
               </div>
             </>
           )}
-          <button className="button-review" type="submit" disabled={saving}>
+          <button className="button-review" type="submit" disabled={saving || Boolean(uploadingPageImage) || uploadingHero}>
             {saving ? "Saving…" : "Update public page"}
           </button>
           {notice && <div className="admin-notice" role="status">{notice}</div>}

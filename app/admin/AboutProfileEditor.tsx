@@ -5,9 +5,15 @@ import type { AboutProfile } from "../lib/bcc-profile";
 export function AboutProfileEditor({
   profile,
   onChange,
+  onUploadPdf,
+  uploadingPdf,
+  disabled,
 }: {
   profile: AboutProfile;
   onChange: (patch: Partial<AboutProfile>) => void;
+  onUploadPdf: (file: File | undefined) => void;
+  uploadingPdf: boolean;
+  disabled: boolean;
 }) {
   function updateFocus(index: number, field: "title" | "description", value: string) {
     const focuses = profile.focuses.map((focus) => ({ ...focus })) as AboutProfile["focuses"];
@@ -27,6 +33,24 @@ export function AboutProfileEditor({
         <strong>About page details</strong>
         <small>All public wording, official facts and committee contacts</small>
       </div>
+
+      <details open>
+        <summary>Welcome guide PDF</summary>
+        <div className="about-admin-fields">
+          <label className="wide">About PDF link
+            <input maxLength={500} value={profile.welcomePdfUrl} disabled={disabled}
+              placeholder="/documents/bcc-welcome-guide-2026.pdf or https://…"
+              onChange={(event) => onChange({ welcomePdfUrl: event.target.value })} />
+            <small>Use a local path or HTTPS link. Clear this field to hide the PDF button.</small>
+          </label>
+          <label className="wide">Upload replacement PDF
+            <input type="file" accept="application/pdf" disabled={disabled}
+              onChange={(event) => { onUploadPdf(event.target.files?.[0]); event.target.value = ""; }} />
+            <small>{uploadingPdf ? "Uploading PDF…" : "Choose a public PDF up to 15 MB, then click Update public page."}</small>
+          </label>
+          <small className="wide">Uploaded files are publicly accessible. Check visible and hidden contact details before uploading.</small>
+        </div>
+      </details>
 
       <details open>
         <summary>Story and official facts</summary>

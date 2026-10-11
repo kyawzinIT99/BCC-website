@@ -24,6 +24,7 @@ export type AboutProfile = {
   committeeTitle: string;
   committeeNote: string;
   committeeUpdated: string;
+  welcomePdfUrl: string;
   address: string;
   phone: string;
   contactEyebrow: string;
@@ -78,6 +79,7 @@ export const defaultAboutProfile: AboutProfile = {
   committeeTitle: "Management committee.",
   committeeNote: "Contact details are provided for genuine community enquiries.",
   committeeUpdated: "27 March 2026",
+  welcomePdfUrl: "/documents/bcc-welcome-guide-2026.pdf",
   address: "3 Bellew Way, Noranda WA 6062",
   phone: "0412 855 568",
   contactEyebrow: "Contact BCCWA",
@@ -99,6 +101,21 @@ export function cloneAboutProfile(profile: AboutProfile = defaultAboutProfile): 
 
 export function phoneHref(phone: string) {
   return `tel:${phone.replace(/[^+\d]/g, "")}`;
+}
+
+/** Allow a local document path or an HTTPS link, including an empty value to hide it. */
+export function validWelcomePdfUrl(value: unknown): value is string {
+  if (typeof value !== "string" || value.length > 500) return false;
+  const url = value.trim();
+  if (!url) return true;
+  if (/[\\\s\u0000-\u001f\u007f]/.test(url)) return false;
+  if (url.startsWith("/") && !url.startsWith("//")) return true;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && !parsed.username && !parsed.password;
+  } catch {
+    return false;
+  }
 }
 
 export function normalizeAboutProfile(value: unknown): AboutProfile {
@@ -137,6 +154,9 @@ export function normalizeAboutProfile(value: unknown): AboutProfile {
     committeeTitle: text(candidate.committeeTitle, defaultAboutProfile.committeeTitle),
     committeeNote: text(candidate.committeeNote, defaultAboutProfile.committeeNote),
     committeeUpdated: text(candidate.committeeUpdated, defaultAboutProfile.committeeUpdated),
+    welcomePdfUrl: candidate.welcomePdfUrl === undefined
+      ? defaultAboutProfile.welcomePdfUrl
+      : validWelcomePdfUrl(candidate.welcomePdfUrl) ? candidate.welcomePdfUrl.trim() : "",
     address: text(candidate.address, defaultAboutProfile.address),
     phone: text(candidate.phone, defaultAboutProfile.phone),
     contactEyebrow: text(candidate.contactEyebrow, defaultAboutProfile.contactEyebrow),

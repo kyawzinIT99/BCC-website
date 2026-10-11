@@ -2,6 +2,7 @@ import { authRuntime, authenticateRequest } from "../../lib/auth";
 import {
   defaultAboutProfile,
   normalizeAboutProfile,
+  validWelcomePdfUrl,
   type AboutProfile,
 } from "../../lib/bcc-profile";
 import {
@@ -96,6 +97,7 @@ function validText(value: unknown, maxLength: number) {
 function validAbout(value: unknown): value is AboutProfile {
   if (!value || typeof value !== "object") return false;
   const profile = value as Partial<AboutProfile>;
+  if (profile.welcomePdfUrl !== undefined && !validWelcomePdfUrl(profile.welcomePdfUrl)) return false;
   const textFields: Array<[unknown, number]> = [
     [profile.historyEyebrow, 80], [profile.historyTitle, 160], [profile.historyBody, 1600],
     [profile.formed, 80], [profile.incorporated, 80], [profile.legalName, 180], [profile.abn, 40],

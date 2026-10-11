@@ -152,10 +152,18 @@ async function ensureSchema(pool: Pool) {
   return runtimeGlobal.__bccSchemaReady;
 }
 
-function dbValue(value: unknown) {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value)
-    ? value.replace("T", " ").replace("Z", "")
-    : value;
+type SqlValue = string | number | bigint | boolean | Date | null | Uint8Array;
+
+export function dbValue(value: unknown): SqlValue {
+  if (typeof value === "string") {
+    return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value)
+      ? value.replace("T", " ").replace("Z", "")
+      : value;
+  }
+  if (value === null || typeof value === "number" || typeof value === "bigint" ||
+      typeof value === "boolean" || value instanceof Date || value instanceof Uint8Array) return value;
+  if (value instanceof ArrayBuffer) return new Uint8Array(value);
+  throw new TypeError("Unsupported database parameter type");
 }
 
 function translateSql(source: string) {
@@ -166,7 +174,7 @@ function translateSql(source: string) {
 }
 
 class MySqlStatement implements D1PreparedStatement {
-  private values: unknown[] = [];
+  private values: SqlValue[] = [];
   constructor(private pool: Pool, private sql: string) {}
   bind(...values: unknown[]) { this.values = values.map(dbValue); return this; }
 
